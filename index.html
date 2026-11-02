@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>محفظتي | Personal Finance Portal</title>
+  <meta name="description" content="بوابة شخصية ذكية وسريعة لتتبع المصاريف والدخل مع رسوم بيانية وتحليلات وتخزين آمن محلياً.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- App Container -->
+  <div class="app-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <i data-lucide="wallet-cards"></i>
+          </div>
+          <div class="logo-text">
+            <span class="logo-title">محفظتي</span>
+            <span class="logo-subtitle">Finance Portal</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>لوحة التحكم</span>
+        </button>
+        <button class="nav-item" data-tab="transactions">
+          <i data-lucide="receipt"></i>
+          <span>سجل المعاملات</span>
+        </button>
+        <button class="nav-item" data-tab="analytics">
+          <i data-lucide="pie-chart"></i>
+          <span>التقارير والتحليلات</span>
+        </button>
+        <button class="nav-item" data-tab="budgets">
+          <i data-lucide="target"></i>
+          <span>الميزانيات والأهداف</span>
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <i data-lucide="sliders"></i>
+          <span>الإعدادات والبيانات</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="storage-badge">
+          <i data-lucide="shield-check"></i>
+          <div>
+            <div class="storage-title">تخزين آمن محلياً</div>
+            <div class="storage-desc">بياناتك على جهازك فقط</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle btn-icon" id="menuToggle" aria-label="القائمة">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="page-title-group">
+            <h1 id="pageTitle">لوحة التحكم</h1>
+            <p id="currentDateDisplay" class="date-subtitle"></p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Month Selector -->
+          <div class="filter-dropdown">
+            <i data-lucide="calendar"></i>
+            <select id="monthFilter" aria-label="اختر الشهر"></select>
+          </div>
+
+          <!-- Currency Selector Quick Badge -->
+          <div class="currency-tag" id="currentCurrencyTag" title="العملة الحالية">
+            <span id="currencySymbolText">EGP</span>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button class="btn-icon theme-toggle" id="themeToggle" title="تبديل الوضع الليلي / الفاتح">
+            <i data-lucide="sun" class="sun-icon"></i>
+            <i data-lucide="moon" class="moon-icon"></i>
+          </button>
+
+          <!-- Add Transaction Button -->
+          <button class="btn btn-primary" id="openAddModalBtn">
+            <i data-lucide="plus-circle"></i>
+            <span>إضافة معاملة</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Views -->
+      <div class="content-container">
+
+        <!-- TAB 1: DASHBOARD -->
+        <section id="tab-dashboard" class="tab-pane active">
+          
+          <!-- Summary Cards Grid -->
+          <div class="stats-grid">
+            <div class="stat-card balance-card">
+              <div class="stat-header">
+                <span class="stat-label">صافي الرصيد المتبقي</span>
+                <div class="stat-icon-wrapper balance">
+                  <i data-lucide="landmark"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="netBalanceVal">0.00</div>
+              <div class="stat-footer">
+                <span class="savings-rate" id="savingsRateVal">معدل الادخار: 0%</span>
+              </div>
+            </div>
+
+            <div class="stat-card income-card">
+              <div class="stat-header">
+                <span class="stat-label">إجمالي الدخل</span>
+                <div class="stat-icon-wrapper income">
+                  <i data-lucide="arrow-down-left"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="totalIncomeVal">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="incomeCountVal">0 عملية واردة</span>
+              </div>
+            </div>
+
+            <div class="stat-card expense-card">
+              <div class="stat-header">
+                <span class="stat-label">إجمالي المصروفات</span>
+                <div class="stat-icon-wrapper expense">
+                  <i data-lucide="arrow-up-right"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="totalExpenseVal">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="expenseCountVal">0 عملية صرف</span>
+              </div>
+            </div>
+
+            <div class="stat-card daily-card">
+              <div class="stat-header">
+                <span class="stat-label">متوسط الصرف اليومي</span>
+                <div class="stat-icon-wrapper daily">
+                  <i data-lucide="trending-up"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="dailyAvgVal">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="todaySpentVal">صرف اليوم: 0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="dashboard-charts-grid">
+            <div class="card chart-card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="pie-chart"></i>
+                  <h3>توزيع المصروفات حسب الفئة</h3>
+                </div>
+                <span class="badge" id="chartCategoriesBadge">هذا الشهر</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="categoryDoughnutChart"></canvas>
+              </div>
+              <div id="chartLegendCustom" class="custom-chart-legend"></div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="bar-chart-3"></i>
+                  <h3>حركة الأيام (مصروفات يومية)</h3>
+                </div>
+                <span class="badge">تطور الإنفاق</span>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="dailySpendingBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Transactions Preview -->
+          <div class="card recent-tx-card">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="clock"></i>
+                <h3>أحدث المعاملات</h3>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="viewAllTxBtn">
+                <span>عرض الكل</span>
+                <i data-lucide="chevron-left"></i>
+              </button>
+            </div>
+            <div class="tx-list" id="dashboardRecentList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- TAB 2: TRANSACTIONS LIST -->
+        <section id="tab-transactions" class="tab-pane">
+          <div class="card">
+            <div class="card-header flex-wrap">
+              <div class="card-title">
+                <i data-lucide="receipt"></i>
+                <h3>كل المعاملات</h3>
+              </div>
+
+              <!-- Filter & Search Controls -->
+              <div class="tx-controls">
+                <div class="search-input-box">
+                  <i data-lucide="search"></i>
+                  <input type="text" id="txSearchInput" placeholder="بحث بالوصف أو الفئة...">
+                </div>
+
+                <select id="txTypeFilter">
+                  <option value="all">كل الأنواع</option>
+                  <option value="expense">مصروفات فقط</option>
+                  <option value="income">دخل فقط</option>
+                </select>
+
+                <select id="txCategoryFilter">
+                  <option value="all">كل الفئات</option>
+                </select>
+
+                <button class="btn btn-outline btn-sm" id="exportCsvBtn" title="تصدير كملف إكسل">
+                  <i data-lucide="download"></i>
+                  <span>تصدير CSV</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table" id="transactionsTable">
+                <thead>
+                  <tr>
+                    <th>النوع</th>
+                    <th>الفئة</th>
+                    <th>الوصف</th>
+                    <th>طريقة الدفع</th>
+                    <th>التاريخ</th>
+                    <th>المبلغ</th>
+                    <th class="actions-col">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="transactionsTableBody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <div id="noTransactionsState" class="empty-state hidden">
+              <div class="empty-icon"><i data-lucide="inbox"></i></div>
+              <h4>لا توجد معاملات مسجلة</h4>
+              <p>ابدأ بإضافة أول معاملة لك لتظهر هنا وفي التحليلات.</p>
+              <button class="btn btn-primary" onclick="openAddModal()">
+                <i data-lucide="plus"></i> إضافة معاملة الآن
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: DETAILED ANALYTICS -->
+        <section id="tab-analytics" class="tab-pane">
+          <div class="analytics-header-banner">
+            <div>
+              <h2>التحليلات والمقارنات الشهرية</h2>
+              <p>نظرة متعمقة على اتجاهات دخلك ومصروفاتك عبر الزمن لتحديد أوجه التوفير.</p>
+            </div>
+          </div>
+
+          <div class="analytics-grid">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="layers"></i>
+                  <h3>مقارنة الدخل مقابل المصروفات (آخر 6 أشهر)</h3>
+                </div>
+              </div>
+              <div class="chart-wrapper large-chart">
+                <canvas id="monthlyTrendChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="credit-card"></i>
+                  <h3>حسب طريقة الدفع</h3>
+                </div>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="paymentMethodsChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card full-width">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="list-ordered"></i>
+                  <h3>تفصيل الصرف حسب الفئات (مرتب من الأعلى للأقل)</h3>
+                </div>
+              </div>
+              <div id="categoryBreakdownDetailedList" class="category-breakdown-list">
+                <!-- Rendered via JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: BUDGETS & GOALS -->
+        <section id="tab-budgets" class="tab-pane">
+          <div class="budgets-header card">
+            <div class="budgets-header-content">
+              <div>
+                <h2>الميزانية الشهرية والإنذار المبكر</h2>
+                <p>حدد الحد الأقصى للمصاريف في الشهر لتنبيهك عند الاقتراب من تجاوزه.</p>
+              </div>
+              <div class="budget-setup-action">
+                <div class="input-with-label">
+                  <label for="monthlyBudgetLimitInput">الميزانية الشهرية المستهدفة:</label>
+                  <div class="input-unit-group">
+                    <input type="number" id="monthlyBudgetLimitInput" placeholder="مثلاً: 10000" min="0">
+                    <button class="btn btn-primary btn-sm" id="saveBudgetLimitBtn">حفظ الميزانية</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Big Progress Gauge -->
+            <div class="budget-progress-container">
+              <div class="budget-meta">
+                <span class="budget-spent-info" id="budgetSpentInfo">تم صرف 0 من 0</span>
+                <span class="budget-percent-info" id="budgetPercentInfo">0%</span>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="budgetProgressBar" style="width: 0%;"></div>
+              </div>
+              <div class="budget-status-msg" id="budgetStatusMsg"></div>
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="compass"></i>
+                <h3>مؤشرات ونصائح مالية ذكية</h3>
+              </div>
+            </div>
+            <div class="tips-grid">
+              <div class="tip-card">
+                <div class="tip-icon"><i data-lucide="zap"></i></div>
+                <div>
+                  <h4>قاعدة 50/30/20</h4>
+                  <p>خصص 50% للاحتياجات الأساسية (فواتير، سكن، طعام)، 30% للرغبات والترفيه، و 20% للادخار والاستثمار.</p>
+                </div>
+              </div>
+              <div class="tip-card">
+                <div class="tip-icon"><i data-lucide="shield-alert"></i></div>
+                <div>
+                  <h4>صندوق الطوارئ</h4>
+                  <p>احرص دائماً على وجود ادخار يكفي مصاريفك الأساسية لمدة 3 إلى 6 أشهر لمواجهة أي ظرف غير متوقع.</p>
+                </div>
+              </div>
+              <div class="tip-card">
+                <div class="tip-icon"><i data-lucide="trending-down"></i></div>
+                <div>
+                  <h4>مراقبة التسريبات الصغيرة</h4>
+                  <p>المصاريف اليومية الصغيرة (كالقهوة والوجبات السريعة) تتراكم شهرياً لتشكل مبالغ كبيرة غير محسوبة.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: SETTINGS & BACKUP -->
+        <section id="tab-settings" class="tab-pane">
+          <div class="settings-grid">
+            
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="settings"></i>
+                  <h3>إعدادات الحساب والعملة</h3>
+                </div>
+              </div>
+              <div class="settings-body">
+                <div class="form-group">
+                  <label for="currencySelect">العملة الافتراضية</label>
+                  <select id="currencySelect" class="form-control">
+                    <option value="EGP">جنيه مصري (EGP - ج.م)</option>
+                    <option value="USD">دولار أمريكي (USD - $)</option>
+                    <option value="SAR">ريال سعودي (SAR - ر.س)</option>
+                    <option value="AED">درهم إماراتي (AED - د.إ)</option>
+                    <option value="EUR">يورو (EUR - €)</option>
+                    <option value="KWD">دينار كويتي (KWD - د.ك)</option>
+                    <option value="QAR">ريال قطري (QAR - ر.ق)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="userNameInput">اسم المستخدم / اللقب</label>
+                  <input type="text" id="userNameInput" class="form-control" placeholder="أحمد الشربيني">
+                </div>
+
+                <button class="btn btn-primary" id="saveGeneralSettingsBtn">
+                  <i data-lucide="check"></i> حفظ التغييرات
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="database"></i>
+                  <h3>النسخ الاحتياطي واستعادة البيانات</h3>
+                </div>
+              </div>
+              <div class="settings-body">
+                <p class="text-muted">
+                  بياناتك مخزنة محلياً بالكامل على متصفحك. ننصح بتحميل نسخة احتياطية من حين لآخر لتتمكن من استرجاعها على أي جهاز آخر.
+                </p>
+                
+                <div class="backup-actions">
+                  <button class="btn btn-outline" id="downloadBackupBtn">
+                    <i data-lucide="download"></i>
+                    <span>تحميل نسخة احتياطية (JSON)</span>
+                  </button>
+                  
+                  <label class="btn btn-outline file-upload-btn">
+                    <i data-lucide="upload"></i>
+                    <span>استعادة من ملف JSON</span>
+                    <input type="file" id="restoreBackupInput" accept=".json" style="display:none;">
+                  </label>
+                </div>
+
+                <hr class="divider">
+
+                <div class="danger-zone">
+                  <h4>إجراءات إضافية</h4>
+                  <div class="danger-actions">
+                    <button class="btn btn-ghost" id="loadSampleDataBtn">
+                      <i data-lucide="refresh-cw"></i>
+                      <span>إعادة تحميل بيانات تجريبية</span>
+                    </button>
+                    <button class="btn btn-danger" id="clearAllDataBtn">
+                      <i data-lucide="trash-2"></i>
+                      <span>مسح جميع البيانات نهائياً</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card full-width">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="github"></i>
+                  <h3>النشر على GitHub Pages</h3>
+                </div>
+              </div>
+              <div class="settings-body">
+                <p>هذا المشروع مبني ليعمل مباشرة بنسبة 100% على GitHub Pages كـ Static Web Application بدون الحاجة لأي خادم أو تثبيت معقد.</p>
+                <div class="github-steps">
+                  <div class="step-item">
+                    <span class="step-num">1</span>
+                    <div>
+                      <strong>أنشئ مستودع جديد على GitHub</strong>
+                      <p>سمّه مثلاً <code>personal-finance</code> واجعله Public.</p>
+                    </div>
+                  </div>
+                  <div class="step-item">
+                    <span class="step-num">2</span>
+                    <div>
+                      <strong>ارفع ملفات المشروع</strong>
+                      <p>ارفع ملفات <code>index.html</code> و <code>style.css</code> و <code>app.js</code> إلى الفرع الرئيسي (main).</p>
+                    </div>
+                  </div>
+                  <div class="step-item">
+                    <span class="step-num">3</span>
+                    <div>
+                      <strong>فعّل GitHub Pages</strong>
+                      <p>من <strong>Settings</strong> > <strong>Pages</strong> > اختر <strong>Source: Deploy from a branch</strong> والفرع <strong>main / root</strong> واضغط Save.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ADD / EDIT TRANSACTION MODAL -->
+  <div class="modal-backdrop" id="txModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">إضافة معاملة جديدة</h3>
+        <button class="btn-icon" id="closeModalBtn" aria-label="إغلاق">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="txForm">
+        <input type="hidden" id="txId">
+
+        <!-- Type Selector (Tabs) -->
+        <div class="type-selector-group">
+          <label class="type-pill">
+            <input type="radio" name="txType" value="expense" checked>
+            <span class="type-label expense-type">
+              <i data-lucide="arrow-up-right"></i>
+              <span>مصروف</span>
+            </span>
+          </label>
+          <label class="type-pill">
+            <input type="radio" name="txType" value="income">
+            <span class="type-label income-type">
+              <i data-lucide="arrow-down-left"></i>
+              <span>دخل</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="txAmount">المبلغ *</label>
+            <div class="input-with-icon">
+              <input type="number" id="txAmount" step="0.01" min="0.01" required placeholder="0.00">
+              <span class="currency-symbol-addon" id="modalCurrencySymbol">EGP</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="txCategory">الفئة *</label>
+            <select id="txCategory" required>
+              <!-- Populated dynamically via JS -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="txDate">التاريخ *</label>
+            <input type="date" id="txDate" required>
+          </div>
+
+          <div class="form-group">
+            <label for="txPaymentMethod">طريقة الدفع</label>
+            <select id="txPaymentMethod">
+              <option value="cash">كاش (نقدي)</option>
+              <option value="card">بطاقة بنكية / فيزا</option>
+              <option value="wallet">محفظة إلكترونية (فودافون كاش / إنستاباي)</option>
+              <option value="bank">تحويل بنكي</option>
+              <option value="other">أخرى</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="txNote">الوصف أو ملاحظات</label>
+          <input type="text" id="txNote" placeholder="مثال: مشتريات السوبرماركت الأسبوعية...">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="cancelModalBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="saveTxBtn">
+            <i data-lucide="check"></i>
+            <span>حفظ المعاملة</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Main JavaScript File -->
+  <script src="app.js"></script>
+</body>
+</html>
