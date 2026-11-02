@@ -330,9 +330,9 @@ function loadData() {
   const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   appState.selectedMonth = currentMonth;
 
-  // Display top bar date
+  // Display top bar date (using Latin numerals 1, 2, 3...)
   const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('currentDateDisplay').textContent = today.toLocaleDateString('ar-EG', dateOptions);
+  document.getElementById('currentDateDisplay').textContent = today.toLocaleDateString('ar-EG-u-nu-latn', dateOptions);
 }
 
 // Storage Helpers
@@ -726,7 +726,7 @@ function updateCurrencyDisplay() {
 
 function formatMoney(amount) {
   const curr = appState.settings.currency || 'EGP';
-  return `${Number(amount || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${curr}`;
+  return `${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${curr}`;
 }
 
 // Populate Month Selector Filter
@@ -748,7 +748,7 @@ function populateMonthFilter() {
   sortedMonths.forEach(m => {
     const [year, month] = m.split('-');
     const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
-    const label = dateObj.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+    const label = dateObj.toLocaleDateString('ar-EG-u-nu-latn', { month: 'long', year: 'numeric' });
 
     const option = document.createElement('option');
     option.value = m;
@@ -1784,7 +1784,7 @@ function renderSadaqahTab() {
     historyList.innerHTML = sorted.map(tx => {
       const cat = getCategoryInfo('sadaqah', tx.category);
       const acc = appState.accounts.find(a => a.id === tx.accountId) || { name: 'حساب غير محدد' };
-      const dateFormatted = new Date(tx.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+      const dateFormatted = new Date(tx.date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
 
       return `
         <div class="tx-row-item">
@@ -1836,7 +1836,7 @@ function renderRecentDashboardList(monthTx) {
     const isIncome = tx.type === 'income';
     const sign = isIncome ? '+' : '-';
     const amountClass = isIncome ? 'income' : (tx.type === 'sadaqah' ? 'sadaqah' : 'expense');
-    const dateFormatted = new Date(tx.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+    const dateFormatted = new Date(tx.date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' });
 
     const safeTitle = escapeHtml(tx.note || cat.name);
     const safeCatName = escapeHtml(cat.name);
@@ -2176,7 +2176,7 @@ function renderCharts() {
     last6Months.forEach(m => {
       const [y, mn] = m.split('-');
       const dObj = new Date(parseInt(y), parseInt(mn) - 1, 1);
-      monthNames.push(dObj.toLocaleDateString('ar-EG', { month: 'short' }));
+      monthNames.push(dObj.toLocaleDateString('ar-EG-u-nu-latn', { month: 'short' }));
 
       let inc = 0;
       let exp = 0;
