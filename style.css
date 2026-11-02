@@ -54,6 +54,16 @@
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --sidebar-width: 260px;
   --bottom-nav-height: 64px;
+
+  /* Semantic Z-Index Scale */
+  --z-dropdown: 20;
+  --z-sticky: 30;
+  --z-bottom-nav: 40;
+  --z-sidebar-overlay: 50;
+  --z-sidebar: 60;
+  --z-modal-backdrop: 70;
+  --z-modal: 75;
+  --z-toast: 90;
 }
 
 /* Light Theme Variables */
@@ -124,7 +134,7 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 60;
+  z-index: var(--z-sidebar);
   padding: 1.5rem 1rem;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -269,7 +279,7 @@ body {
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 55;
+  z-index: var(--z-sidebar-overlay);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -300,7 +310,7 @@ body {
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: var(--z-sticky);
 }
 
 .topbar-left {
@@ -1486,7 +1496,7 @@ body.light-theme .moon-icon { display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: var(--z-modal-backdrop);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
@@ -1510,6 +1520,7 @@ body.light-theme .moon-icon { display: block; }
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   max-height: 90vh;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .modal-backdrop.open .modal-card {
@@ -1617,7 +1628,7 @@ body.light-theme .moon-icon { display: block; }
   position: fixed;
   bottom: 5rem;
   left: 1.5rem;
-  z-index: 999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1654,11 +1665,13 @@ body.light-theme .moon-icon { display: block; }
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--bottom-nav-height);
+  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
-  z-index: 50;
-  padding: 0 0.5rem;
+  z-index: var(--z-bottom-nav);
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
   justify-content: space-around;
   align-items: center;
   backdrop-filter: blur(12px);
@@ -1677,7 +1690,8 @@ body.light-theme .moon-icon { display: block; }
   font-family: inherit;
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.35rem 0.6rem;
+  padding: 0.35rem 0.5rem;
+  min-height: 48px;
   cursor: pointer;
   transition: var(--transition);
   flex: 1;
@@ -2069,16 +2083,34 @@ body.light-theme .moon-icon { display: block; }
   .modal-card {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    max-height: 85vh;
+    max-height: 88vh;
     transform: translateY(100%);
+    padding: 1.25rem;
   }
 
-  .modal-backdrop.open .modal-card {
-    transform: translateY(0);
+  .modal-header {
+    position: sticky;
+    top: -1.25rem;
+    background: var(--bg-secondary);
+    z-index: 10;
+    padding-top: 0.5rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .modal-footer {
+    position: sticky;
+    bottom: -1.25rem;
+    background: var(--bg-secondary);
+    z-index: 10;
+    padding: 0.85rem 0;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
   }
 
   .toast-container {
-    bottom: calc(var(--bottom-nav-height) + 1rem);
+    bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 1rem);
     left: 1rem;
     right: 1rem;
   }
@@ -2095,5 +2127,24 @@ body.light-theme .moon-icon { display: block; }
 
   .sadaqah-hero-content h2 {
     font-size: 1.25rem;
+  }
+
+  .debts-people-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Accessible Headings & Typography Balance */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+/* Reduced Motion Alternative (A11y requirement) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

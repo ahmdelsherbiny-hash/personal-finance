@@ -344,9 +344,20 @@ function saveDebts() { localStorage.setItem('mf_debt_ledger', JSON.stringify(app
 function saveSettings() { localStorage.setItem('mf_settings', JSON.stringify(appState.settings)); }
 
 function initLucide() {
-  if (window.lucide) {
-    lucide.createIcons();
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
   }
+}
+
+// XSS Sanitizer for rendering user text
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // Account Balances Calculation (including linked debt transactions)
@@ -1375,7 +1386,7 @@ function openPersonLedger(contactId) {
           <td><span class="type-tag ${typeTagClass}">${sign} ${typeLabel}</span></td>
           <td style="font-weight:800; direction:ltr; text-align:right;">${formatMoney(m.amount)}</td>
           <td>${accText}</td>
-          <td>${m.note || '-'}</td>
+          <td>${m.note ? escapeHtml(m.note) : '-'}</td>
           <td class="actions-col">
             <button class="action-btn-mini delete" onclick="deleteDebtMovement('${m.id}')" title="حذف الحركة">
               <i data-lucide="trash"></i>
@@ -1470,10 +1481,10 @@ function renderDebtsTab() {
         <div>
           <div class="debt-card-header">
             <div class="debt-person-info">
-              <h4>${person.name}</h4>
+              <h4>${escapeHtml(person.name)}</h4>
               <div class="debt-person-phone">
-                ${person.phone ? `<span>📱 ${person.phone}</span>` : ''}
-                ${person.notes ? `<span>• ${person.notes}</span>` : ''}
+                ${person.phone ? `<span>📱 ${escapeHtml(person.phone)}</span>` : ''}
+                ${person.notes ? `<span>• ${escapeHtml(person.notes)}</span>` : ''}
               </div>
             </div>
             <span class="debt-status-badge ${badgeClass}">${badgeText}</span>
@@ -1827,6 +1838,10 @@ function renderRecentDashboardList(monthTx) {
     const amountClass = isIncome ? 'income' : (tx.type === 'sadaqah' ? 'sadaqah' : 'expense');
     const dateFormatted = new Date(tx.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
 
+    const safeTitle = escapeHtml(tx.note || cat.name);
+    const safeCatName = escapeHtml(cat.name);
+    const safeAccName = acc.name ? `<span>• ${escapeHtml(acc.name)}</span>` : '';
+
     return `
       <div class="tx-row-item">
         <div class="tx-item-left">
@@ -1834,10 +1849,10 @@ function renderRecentDashboardList(monthTx) {
             <span>${cat.icon}</span>
           </div>
           <div class="tx-meta-info">
-            <span class="tx-title">${tx.note || cat.name}</span>
+            <span class="tx-title">${safeTitle}</span>
             <div class="tx-sub">
-              <span>${cat.name}</span>
-              ${acc.name ? `<span>• ${acc.name}</span>` : ''}
+              <span>${safeCatName}</span>
+              ${safeAccName}
               <span>• ${dateFormatted}</span>
             </div>
           </div>
@@ -1921,11 +1936,11 @@ function renderTransactionsTable() {
         <td>
           <span style="display:inline-flex; align-items:center; gap:0.4rem;">
             <span>${cat.icon}</span>
-            <strong>${cat.name}</strong>
+            <strong>${escapeHtml(cat.name)}</strong>
           </span>
         </td>
-        <td>${acc.name}</td>
-        <td>${tx.note || '<span style="color:var(--text-muted);">-</span>'}</td>
+        <td>${escapeHtml(acc.name)}</td>
+        <td>${tx.note ? escapeHtml(tx.note) : '<span style="color:var(--text-muted);">-</span>'}</td>
         <td>${tx.date}</td>
         <td style="font-weight:800; direction:ltr; text-align:right;" class="${typeTagClass}">
           ${sign} ${formatMoney(tx.amount)}
@@ -1959,8 +1974,8 @@ function renderTransactionsTable() {
             <div style="display:flex; align-items:center; gap:0.6rem;">
               <span style="font-size:1.3rem;">${cat.icon}</span>
               <div>
-                <strong style="font-size:0.95rem;">${tx.note || cat.name}</strong>
-                <div style="font-size:0.75rem; color:var(--text-muted);">${cat.name} • ${acc.name}</div>
+                <strong style="font-size:0.95rem;">${escapeHtml(tx.note || cat.name)}</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(cat.name)} • ${escapeHtml(acc.name)}</div>
               </div>
             </div>
             <div class="tx-amount ${typeTagClass}">
