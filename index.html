@@ -2,9 +2,12 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>محفظتي | Personal Finance Portal</title>
-  <meta name="description" content="بوابة شخصية ذكية وسريعة لتتبع المصاريف والدخل مع رسوم بيانية وتحليلات وتخزين آمن محلياً.">
+  <meta name="description" content="بوابة شخصية ذكية وسريعة لتتبع المصاريف، الحسابات، والصدقات مع تحليلات ورسوم بيانية.">
+  <meta name="theme-color" content="#0a0d14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>">
@@ -12,7 +15,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -27,8 +30,8 @@
   <!-- App Container -->
   <div class="app-layout">
     
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
+    <!-- Sidebar Navigation (Desktop & Tablet) -->
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo">
           <div class="logo-icon">
@@ -39,6 +42,9 @@
             <span class="logo-subtitle">Finance Portal</span>
           </div>
         </div>
+        <button class="btn-icon sidebar-close-btn" id="sidebarCloseBtn" aria-label="إغلاق القائمة">
+          <i data-lucide="x"></i>
+        </button>
       </div>
 
       <nav class="nav-menu">
@@ -46,9 +52,18 @@
           <i data-lucide="layout-dashboard"></i>
           <span>لوحة التحكم</span>
         </button>
+        <button class="nav-item" data-tab="accounts">
+          <i data-lucide="landmark"></i>
+          <span>حساباتي وأرصدتي</span>
+        </button>
         <button class="nav-item" data-tab="transactions">
           <i data-lucide="receipt"></i>
           <span>سجل المعاملات</span>
+        </button>
+        <button class="nav-item" data-tab="sadaqah">
+          <i data-lucide="heart-handshake"></i>
+          <span>الصدقات والزكاة</span>
+          <span class="nav-badge-pill" id="sadaqahBadge">✨</span>
         </button>
         <button class="nav-item" data-tab="analytics">
           <i data-lucide="pie-chart"></i>
@@ -56,11 +71,11 @@
         </button>
         <button class="nav-item" data-tab="budgets">
           <i data-lucide="target"></i>
-          <span>الميزانيات والأهداف</span>
+          <span>الميزانية</span>
         </button>
         <button class="nav-item" data-tab="settings">
           <i data-lucide="sliders"></i>
-          <span>الإعدادات والبيانات</span>
+          <span>الإعدادات والفئات</span>
         </button>
       </nav>
 
@@ -75,13 +90,16 @@
       </div>
     </aside>
 
+    <!-- Sidebar Backdrop on Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Main Content Area -->
     <main class="main-wrapper">
       
       <!-- Top Bar -->
       <header class="topbar">
         <div class="topbar-left">
-          <button class="menu-toggle btn-icon" id="menuToggle" aria-label="القائمة">
+          <button class="menu-toggle btn-icon" id="menuToggle" aria-label="القائمة الجانبية">
             <i data-lucide="menu"></i>
           </button>
           <div class="page-title-group">
@@ -97,7 +115,7 @@
             <select id="monthFilter" aria-label="اختر الشهر"></select>
           </div>
 
-          <!-- Currency Selector Quick Badge -->
+          <!-- Currency Badge -->
           <div class="currency-tag" id="currentCurrencyTag" title="العملة الحالية">
             <span id="currencySymbolText">EGP</span>
           </div>
@@ -108,8 +126,8 @@
             <i data-lucide="moon" class="moon-icon"></i>
           </button>
 
-          <!-- Add Transaction Button -->
-          <button class="btn btn-primary" id="openAddModalBtn">
+          <!-- Add Transaction Button (Desktop) -->
+          <button class="btn btn-primary desktop-only-btn" id="openAddModalBtn">
             <i data-lucide="plus-circle"></i>
             <span>إضافة معاملة</span>
           </button>
@@ -126,9 +144,9 @@
           <div class="stats-grid">
             <div class="stat-card balance-card">
               <div class="stat-header">
-                <span class="stat-label">صافي الرصيد المتبقي</span>
+                <span class="stat-label">إجمالي السيولة (كل الحسابات)</span>
                 <div class="stat-icon-wrapper balance">
-                  <i data-lucide="landmark"></i>
+                  <i data-lucide="wallet"></i>
                 </div>
               </div>
               <div class="stat-value" id="netBalanceVal">0.00</div>
@@ -139,7 +157,7 @@
 
             <div class="stat-card income-card">
               <div class="stat-header">
-                <span class="stat-label">إجمالي الدخل</span>
+                <span class="stat-label">إجمالي الدخل (الشهر)</span>
                 <div class="stat-icon-wrapper income">
                   <i data-lucide="arrow-down-left"></i>
                 </div>
@@ -152,7 +170,7 @@
 
             <div class="stat-card expense-card">
               <div class="stat-header">
-                <span class="stat-label">إجمالي المصروفات</span>
+                <span class="stat-label">إجمالي المصروفات (الشهر)</span>
                 <div class="stat-icon-wrapper expense">
                   <i data-lucide="arrow-up-right"></i>
                 </div>
@@ -163,17 +181,28 @@
               </div>
             </div>
 
-            <div class="stat-card daily-card">
+            <div class="stat-card sadaqah-card">
               <div class="stat-header">
-                <span class="stat-label">متوسط الصرف اليومي</span>
-                <div class="stat-icon-wrapper daily">
-                  <i data-lucide="trending-up"></i>
+                <span class="stat-label">صدقات الشهر</span>
+                <div class="stat-icon-wrapper sadaqah">
+                  <i data-lucide="heart"></i>
                 </div>
               </div>
-              <div class="stat-value" id="dailyAvgVal">0.00</div>
+              <div class="stat-value" id="dashSadaqahVal">0.00</div>
               <div class="stat-footer">
-                <span class="stat-subtext" id="todaySpentVal">صرف اليوم: 0.00</span>
+                <span class="stat-subtext" id="dashSadaqahRatio">نسبة 0% من الدخل</span>
               </div>
+            </div>
+          </div>
+
+          <!-- Quick Accounts Preview Bar -->
+          <div class="dashboard-accounts-preview">
+            <div class="section-subhead">
+              <h3><i data-lucide="landmark"></i> الحسابات والمحافظ</h3>
+              <button class="btn btn-ghost btn-sm" onclick="switchTab('accounts')">إدارة الحسابات ←</button>
+            </div>
+            <div class="accounts-chip-grid" id="dashboardAccountsList">
+              <!-- Rendered via JS -->
             </div>
           </div>
 
@@ -197,9 +226,9 @@
               <div class="card-header">
                 <div class="card-title">
                   <i data-lucide="bar-chart-3"></i>
-                  <h3>حركة الأيام (مصروفات يومية)</h3>
+                  <h3>الإنفاق اليومي خلال الشهر</h3>
                 </div>
-                <span class="badge">تطور الإنفاق</span>
+                <span class="badge">الأيام</span>
               </div>
               <div class="chart-wrapper">
                 <canvas id="dailySpendingBarChart"></canvas>
@@ -226,13 +255,46 @@
 
         </section>
 
-        <!-- TAB 2: TRANSACTIONS LIST -->
+        <!-- TAB 2: ACCOUNTS & BALANCES (حساباتي وأرصدتي) -->
+        <section id="tab-accounts" class="tab-pane">
+          <div class="section-hero card">
+            <div class="hero-content">
+              <div>
+                <h2>الحسابات والمحافظ المالية</h2>
+                <p>متابعة رصيد كل حساب بدقة: البنوك، المحافظ الإلكترونية كفودافون كاش، والبوكيت موني، مع حساب الرصيد الحالي تلقائياً بناءً على العمليات.</p>
+              </div>
+              <button class="btn btn-primary" onclick="openAccountModal()">
+                <i data-lucide="plus-circle"></i>
+                <span>إضافة حساب جديد</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Total Wealth Summary Banner -->
+          <div class="wealth-summary-banner">
+            <div class="wealth-item">
+              <span class="wealth-label">مجموع الأرصدة الحالية:</span>
+              <span class="wealth-value" id="totalWealthVal">0.00</span>
+            </div>
+            <div class="wealth-item">
+              <span class="wealth-label">مجموع الأرصدة الافتتاحية:</span>
+              <span class="wealth-sub" id="totalInitialWealthVal">0.00</span>
+            </div>
+          </div>
+
+          <!-- Accounts Grid Cards -->
+          <div class="accounts-full-grid" id="accountsCardsContainer">
+            <!-- Rendered via JS -->
+          </div>
+        </section>
+
+        <!-- TAB 3: TRANSACTIONS LIST -->
         <section id="tab-transactions" class="tab-pane">
           <div class="card">
             <div class="card-header flex-wrap">
               <div class="card-title">
                 <i data-lucide="receipt"></i>
-                <h3>كل المعاملات</h3>
+                <h3>سجل المعاملات</h3>
               </div>
 
               <!-- Filter & Search Controls -->
@@ -244,8 +306,13 @@
 
                 <select id="txTypeFilter">
                   <option value="all">كل الأنواع</option>
-                  <option value="expense">مصروفات فقط</option>
-                  <option value="income">دخل فقط</option>
+                  <option value="expense">مصروفات</option>
+                  <option value="income">دخل وارد</option>
+                  <option value="sadaqah">صدقات وزكاة</option>
+                </select>
+
+                <select id="txAccountFilter">
+                  <option value="all">كل الحسابات</option>
                 </select>
 
                 <select id="txCategoryFilter">
@@ -259,14 +326,15 @@
               </div>
             </div>
 
+            <!-- Table for Desktop & Card List for Mobile -->
             <div class="table-responsive">
               <table class="custom-table" id="transactionsTable">
                 <thead>
                   <tr>
                     <th>النوع</th>
                     <th>الفئة</th>
+                    <th>الحساب</th>
                     <th>الوصف</th>
-                    <th>طريقة الدفع</th>
                     <th>التاريخ</th>
                     <th>المبلغ</th>
                     <th class="actions-col">إجراءات</th>
@@ -278,10 +346,15 @@
               </table>
             </div>
 
+            <!-- Mobile Transactions Card View -->
+            <div class="mobile-tx-cards" id="mobileTxCardsContainer">
+              <!-- Rendered via JS on mobile -->
+            </div>
+
             <div id="noTransactionsState" class="empty-state hidden">
               <div class="empty-icon"><i data-lucide="inbox"></i></div>
               <h4>لا توجد معاملات مسجلة</h4>
-              <p>ابدأ بإضافة أول معاملة لك لتظهر هنا وفي التحليلات.</p>
+              <p>ابدأ بإضافة أول معاملة لتظهر هنا وفي حساباتك والتقارير.</p>
               <button class="btn btn-primary" onclick="openAddModal()">
                 <i data-lucide="plus"></i> إضافة معاملة الآن
               </button>
@@ -289,12 +362,146 @@
           </div>
         </section>
 
-        <!-- TAB 3: DETAILED ANALYTICS -->
+        <!-- TAB 4: SADAQAH & CHARITY (تاب الصدقات والزكاة) -->
+        <section id="tab-sadaqah" class="tab-pane">
+          <div class="sadaqah-hero-card">
+            <div class="sadaqah-hero-content">
+              <div class="sadaqah-hadith-badge">
+                <i data-lucide="sparkles"></i>
+                <span>قال رسول الله ﷺ: «مَا نَقَصَتْ صَدَقَةٌ مِنْ مَالٍ»</span>
+              </div>
+              <h2>سجل الصدقات والزكاة والإحسان</h2>
+              <p>مكان مخصص لتتبع عطاءك وتحديد أهداف الصدقة الشهرية واحتساب البركة في مالك.</p>
+              
+              <div class="sadaqah-hero-actions">
+                <button class="btn btn-sadaqah-primary" onclick="openAddModal('sadaqah')">
+                  <i data-lucide="heart-handshake"></i>
+                  <span>تسجيل صدقة جديدة</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sadaqah Stats Cards -->
+          <div class="stats-grid mt-4">
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">صدقات هذا الشهر</span>
+                <div class="stat-icon-wrapper sadaqah">
+                  <i data-lucide="heart"></i>
+                </div>
+              </div>
+              <div class="stat-value text-sadaqah" id="sadaqahMonthVal">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="sadaqahMonthCount">0 عملية صدقة</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">إجمالي الصدقات التراكمي</span>
+                <div class="stat-icon-wrapper sadaqah">
+                  <i data-lucide="award"></i>
+                </div>
+              </div>
+              <div class="stat-value text-sadaqah" id="sadaqahAllTimeVal">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext">تقبل الله طاعاتكم</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">نسبة الصدقة من الدخل</span>
+                <div class="stat-icon-wrapper balance">
+                  <i data-lucide="percent"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="sadaqahRatioVal">0%</div>
+              <div class="stat-footer">
+                <span class="stat-subtext">من إجمالي دخل الشهر الحالي</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">الهدف الشهري للصدقة</span>
+                <div class="stat-icon-wrapper daily">
+                  <i data-lucide="target"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="sadaqahGoalVal">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="sadaqahGoalStatus">حدد نيتك الشهرية</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sadaqah Goal Setup & Quick Zakat Calculator -->
+          <div class="sadaqah-tools-grid mt-4">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="target"></i>
+                  <h3>نية وهدف الصدقة الشهري</h3>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="sadaqahMonthlyTargetInput">المبلغ المستهدف للصدقة هذا الشهر:</label>
+                <div class="input-unit-group">
+                  <input type="number" id="sadaqahMonthlyTargetInput" placeholder="مثلاً: 1000" min="0">
+                  <button class="btn btn-primary btn-sm" id="saveSadaqahTargetBtn">حفظ الهدف</button>
+                </div>
+              </div>
+              <div class="sadaqah-progress-box mt-3">
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill bg-sadaqah" id="sadaqahProgressBar" style="width: 0%;"></div>
+                </div>
+                <div class="budget-meta mt-1">
+                  <span id="sadaqahProgressText" style="font-size:0.85rem;">0% من الهدف</span>
+                  <span id="sadaqahProgressRemaining" style="font-size:0.85rem; color:var(--text-muted);">المتبقي: 0.00</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="calculator"></i>
+                  <h3>حاسبة زكاة المال السريعة</h3>
+                </div>
+              </div>
+              <p class="text-muted text-sm">احسب زكاة المال (2.5%) على إجمالي السيولة النقدية المتوفرة حالياً في حساباتك.</p>
+              <div class="zakat-calc-result">
+                <div class="zakat-label">إجمالي السيولة الحالية:</div>
+                <div class="zakat-amount" id="zakatTotalLiquid">0.00</div>
+                <div class="zakat-label mt-2">مقدار الزكاة الواجبة (2.5%):</div>
+                <div class="zakat-due" id="zakatDueVal">0.00</div>
+                <p class="text-xs text-muted mt-1">* بشرط بلوغ المال النصاب وحولان الحول الهجري عليه.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sadaqah Transactions List -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="history"></i>
+                <h3>سجل الصدقات والزكاة المخرجة</h3>
+              </div>
+            </div>
+            <div class="tx-list" id="sadaqahHistoryList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: DETAILED ANALYTICS -->
         <section id="tab-analytics" class="tab-pane">
           <div class="analytics-header-banner">
             <div>
-              <h2>التحليلات والمقارنات الشهرية</h2>
-              <p>نظرة متعمقة على اتجاهات دخلك ومصروفاتك عبر الزمن لتحديد أوجه التوفير.</p>
+              <h2>التقارير والتحليلات المالية</h2>
+              <p>نظرة شاملة على مصادر دخلك ومصروفاتك لمساعدتك في اتخاذ قرارات مالية أفضل.</p>
             </div>
           </div>
 
@@ -315,7 +522,7 @@
               <div class="card-header">
                 <div class="card-title">
                   <i data-lucide="credit-card"></i>
-                  <h3>حسب طريقة الدفع</h3>
+                  <h3>الصرف حسب الحساب / وسيلة الدفع</h3>
                 </div>
               </div>
               <div class="chart-wrapper">
@@ -337,7 +544,7 @@
           </div>
         </section>
 
-        <!-- TAB 4: BUDGETS & GOALS -->
+        <!-- TAB 6: BUDGETS -->
         <section id="tab-budgets" class="tab-pane">
           <div class="budgets-header card">
             <div class="budgets-header-content">
@@ -349,14 +556,13 @@
                 <div class="input-with-label">
                   <label for="monthlyBudgetLimitInput">الميزانية الشهرية المستهدفة:</label>
                   <div class="input-unit-group">
-                    <input type="number" id="monthlyBudgetLimitInput" placeholder="مثلاً: 10000" min="0">
+                    <input type="number" id="monthlyBudgetLimitInput" placeholder="مثلاً: 12000" min="0">
                     <button class="btn btn-primary btn-sm" id="saveBudgetLimitBtn">حفظ الميزانية</button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Big Progress Gauge -->
             <div class="budget-progress-container">
               <div class="budget-meta">
                 <span class="budget-spent-info" id="budgetSpentInfo">تم صرف 0 من 0</span>
@@ -402,10 +608,63 @@
           </div>
         </section>
 
-        <!-- TAB 5: SETTINGS & BACKUP -->
+        <!-- TAB 7: SETTINGS & CATEGORIES (صفحة الإعدادات والحسابات والفئات) -->
         <section id="tab-settings" class="tab-pane">
+          
           <div class="settings-grid">
             
+            <!-- Accounts Manager in Settings -->
+            <div class="card full-width">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="landmark"></i>
+                  <h3>إدارة الحسابات البنكية والمحافظ والقيمة الافتتاحية</h3>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="openAccountModal()">
+                  <i data-lucide="plus"></i> إضافة حساب
+                </button>
+              </div>
+              <p class="text-muted text-sm mb-3">
+                أدخل حساباتك المختلفة (حساب بنكي 1، حساب بنكي 2، فودافون كاش، بوكيت موني...) مع الرصيد الافتتاحي لكل حساب لتبدأ منه الحسابات الدقيقة.
+              </p>
+              <div class="settings-accounts-table-wrapper">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>اسم الحساب</th>
+                      <th>النوع</th>
+                      <th>الرصيد الافتتاحي</th>
+                      <th>الرصيد الحالي</th>
+                      <th class="actions-col">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="settingsAccountsTableBody">
+                    <!-- Rendered via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Categories Manager in Settings -->
+            <div class="card full-width">
+              <div class="card-header">
+                <div class="card-title">
+                  <i data-lucide="tags"></i>
+                  <h3>إدارة فئات المصاريف (Categories)</h3>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">
+                  <i data-lucide="plus"></i> إضافة فئة جديدة
+                </button>
+              </div>
+              <p class="text-muted text-sm mb-3">
+                يمكنك إضافة فئات مصاريف مخصصة تناسب نمط حياتك، أو تعديل وحذف الفئات الحالية.
+              </p>
+              <div class="categories-tag-grid" id="settingsCategoriesList">
+                <!-- Rendered via JS -->
+              </div>
+            </div>
+
+            <!-- General Settings -->
             <div class="card">
               <div class="card-header">
                 <div class="card-title">
@@ -433,11 +692,12 @@
                 </div>
 
                 <button class="btn btn-primary" id="saveGeneralSettingsBtn">
-                  <i data-lucide="check"></i> حفظ التغييرات
+                  <i data-lucide="check"></i> حفظ الإعدادات
                 </button>
               </div>
             </div>
 
+            <!-- Backup & Restore -->
             <div class="card">
               <div class="card-header">
                 <div class="card-title">
@@ -446,8 +706,8 @@
                 </div>
               </div>
               <div class="settings-body">
-                <p class="text-muted">
-                  بياناتك مخزنة محلياً بالكامل على متصفحك. ننصح بتحميل نسخة احتياطية من حين لآخر لتتمكن من استرجاعها على أي جهاز آخر.
+                <p class="text-muted text-sm">
+                  بياناتك مخزنة محلياً بالكامل على متصفحك. ننصح بتحميل نسخة احتياطية من حين لآخر لتتمكن من استرجاعها على هاتفك أو أي جهاز آخر.
                 </p>
                 
                 <div class="backup-actions">
@@ -466,11 +726,11 @@
                 <hr class="divider">
 
                 <div class="danger-zone">
-                  <h4>إجراءات إضافية</h4>
+                  <h4>إجراءات متقدمة</h4>
                   <div class="danger-actions">
                     <button class="btn btn-ghost" id="loadSampleDataBtn">
                       <i data-lucide="refresh-cw"></i>
-                      <span>إعادة تحميل بيانات تجريبية</span>
+                      <span>تحميل بيانات تجريبية</span>
                     </button>
                     <button class="btn btn-danger" id="clearAllDataBtn">
                       <i data-lucide="trash-2"></i>
@@ -481,49 +741,37 @@
               </div>
             </div>
 
-            <div class="card full-width">
-              <div class="card-header">
-                <div class="card-title">
-                  <i data-lucide="github"></i>
-                  <h3>النشر على GitHub Pages</h3>
-                </div>
-              </div>
-              <div class="settings-body">
-                <p>هذا المشروع مبني ليعمل مباشرة بنسبة 100% على GitHub Pages كـ Static Web Application بدون الحاجة لأي خادم أو تثبيت معقد.</p>
-                <div class="github-steps">
-                  <div class="step-item">
-                    <span class="step-num">1</span>
-                    <div>
-                      <strong>أنشئ مستودع جديد على GitHub</strong>
-                      <p>سمّه مثلاً <code>personal-finance</code> واجعله Public.</p>
-                    </div>
-                  </div>
-                  <div class="step-item">
-                    <span class="step-num">2</span>
-                    <div>
-                      <strong>ارفع ملفات المشروع</strong>
-                      <p>ارفع ملفات <code>index.html</code> و <code>style.css</code> و <code>app.js</code> إلى الفرع الرئيسي (main).</p>
-                    </div>
-                  </div>
-                  <div class="step-item">
-                    <span class="step-num">3</span>
-                    <div>
-                      <strong>فعّل GitHub Pages</strong>
-                      <p>من <strong>Settings</strong> > <strong>Pages</strong> > اختر <strong>Source: Deploy from a branch</strong> والفرع <strong>main / root</strong> واضغط Save.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </section>
 
       </div>
     </main>
+
+    <!-- Mobile Bottom Navigation Bar (App-like Feel) -->
+    <nav class="mobile-bottom-nav">
+      <button class="bottom-nav-item active" data-tab="dashboard">
+        <i data-lucide="layout-dashboard"></i>
+        <span>الرئيسية</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="accounts">
+        <i data-lucide="landmark"></i>
+        <span>الحسابات</span>
+      </button>
+      <button class="bottom-nav-fab" id="mobileFabBtn" aria-label="إضافة معاملة">
+        <i data-lucide="plus"></i>
+      </button>
+      <button class="bottom-nav-item" data-tab="sadaqah">
+        <i data-lucide="heart-handshake"></i>
+        <span>الصدقات</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="transactions">
+        <i data-lucide="receipt"></i>
+        <span>المعاملات</span>
+      </button>
+    </nav>
   </div>
 
-  <!-- ADD / EDIT TRANSACTION MODAL -->
+  <!-- MODAL 1: ADD / EDIT TRANSACTION MODAL -->
   <div class="modal-backdrop" id="txModalBackdrop">
     <div class="modal-card">
       <div class="modal-header">
@@ -536,8 +784,8 @@
       <form id="txForm">
         <input type="hidden" id="txId">
 
-        <!-- Type Selector (Tabs) -->
-        <div class="type-selector-group">
+        <!-- Type Selector (3 options: expense, income, sadaqah) -->
+        <div class="type-selector-group triple-selector">
           <label class="type-pill">
             <input type="radio" name="txType" value="expense" checked>
             <span class="type-label expense-type">
@@ -549,7 +797,14 @@
             <input type="radio" name="txType" value="income">
             <span class="type-label income-type">
               <i data-lucide="arrow-down-left"></i>
-              <span>دخل</span>
+              <span>دخل وارد</span>
+            </span>
+          </label>
+          <label class="type-pill">
+            <input type="radio" name="txType" value="sadaqah">
+            <span class="type-label sadaqah-type">
+              <i data-lucide="heart"></i>
+              <span>صدقة / زكاة</span>
             </span>
           </label>
         </div>
@@ -558,9 +813,16 @@
           <div class="form-group">
             <label for="txAmount">المبلغ *</label>
             <div class="input-with-icon">
-              <input type="number" id="txAmount" step="0.01" min="0.01" required placeholder="0.00">
+              <input type="number" id="txAmount" step="0.01" min="0.01" required placeholder="0.00" inputmode="decimal">
               <span class="currency-symbol-addon" id="modalCurrencySymbol">EGP</span>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label for="txAccount">الحساب المتأثر *</label>
+            <select id="txAccount" required>
+              <!-- Populated dynamically via JS from user accounts -->
+            </select>
           </div>
 
           <div class="form-group">
@@ -574,22 +836,11 @@
             <label for="txDate">التاريخ *</label>
             <input type="date" id="txDate" required>
           </div>
-
-          <div class="form-group">
-            <label for="txPaymentMethod">طريقة الدفع</label>
-            <select id="txPaymentMethod">
-              <option value="cash">كاش (نقدي)</option>
-              <option value="card">بطاقة بنكية / فيزا</option>
-              <option value="wallet">محفظة إلكترونية (فودافون كاش / إنستاباي)</option>
-              <option value="bank">تحويل بنكي</option>
-              <option value="other">أخرى</option>
-            </select>
-          </div>
         </div>
 
         <div class="form-group">
           <label for="txNote">الوصف أو ملاحظات</label>
-          <input type="text" id="txNote" placeholder="مثال: مشتريات السوبرماركت الأسبوعية...">
+          <input type="text" id="txNote" placeholder="مثال: مشتريات السوبرماركت / كفالة إطعام...">
         </div>
 
         <div class="modal-footer">
@@ -597,6 +848,100 @@
           <button type="submit" class="btn btn-primary" id="saveTxBtn">
             <i data-lucide="check"></i>
             <span>حفظ المعاملة</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ADD / EDIT ACCOUNT MODAL -->
+  <div class="modal-backdrop" id="accountModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="accountModalTitle">إضافة حساب مالي جديد</h3>
+        <button class="btn-icon" id="closeAccountModalBtn" aria-label="إغلاق">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="accountForm">
+        <input type="hidden" id="accEditId">
+
+        <div class="form-group mb-3">
+          <label for="accName">اسم الحساب *</label>
+          <input type="text" id="accName" required placeholder="مثال: حساب بنكي 1، فودافون كاش، بوكيت موني...">
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="accType">نوع الحساب *</label>
+            <select id="accType" required>
+              <option value="bank">حساب بنكي (Bank Account)</option>
+              <option value="wallet">محفظة إلكترونية (فودافون كاش / إنستاباي)</option>
+              <option value="cash">بوكيت موني / كاش (Cash)</option>
+              <option value="investment">محفظة استثمارية / ذهب</option>
+              <option value="other">أخرى</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="accInitialBalance">الرصيد الافتتاحي *</label>
+            <div class="input-with-icon">
+              <input type="number" id="accInitialBalance" step="0.01" required placeholder="0.00" inputmode="decimal">
+              <span class="currency-symbol-addon" id="accCurrencySymbol">EGP</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="accColor">لون تمييز الحساب</label>
+          <input type="color" id="accColor" value="#3b82f6" style="height:42px; padding:2px; cursor:pointer;">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="cancelAccountModalBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i>
+            <span>حفظ الحساب</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: ADD CATEGORY MODAL -->
+  <div class="modal-backdrop" id="categoryModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>إضافة فئة مصروفات جديدة</h3>
+        <button class="btn-icon" id="closeCategoryModalBtn" aria-label="إغلاق">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="categoryForm">
+        <div class="form-group mb-3">
+          <label for="catName">اسم الفئة *</label>
+          <input type="text" id="catName" required placeholder="مثال: بنزين، قهوة، صيانة...">
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="catIcon">أيقونة الفئة (رمز تعبيري Emoji) *</label>
+            <input type="text" id="catIcon" value="🏷️" required placeholder="مثال: ☕ أو 🚗 أو 💊" style="font-size:1.3rem; text-align:center;">
+          </div>
+
+          <div class="form-group">
+            <label for="catColor">لون الفئة</label>
+            <input type="color" id="catColor" value="#f59e0b" style="height:42px; padding:2px; cursor:pointer;">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="cancelCategoryModalBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i>
+            <span>إضافة الفئة</span>
           </button>
         </div>
       </form>
