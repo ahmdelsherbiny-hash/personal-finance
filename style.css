@@ -1718,6 +1718,212 @@ body.light-theme .moon-icon { display: block; }
   height: 24px;
 }
 
+/* Debts & Third Party Styles */
+.debts-people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.debt-person-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: var(--transition);
+  position: relative;
+}
+
+.debt-person-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.debt-person-card.status-owed-to-me {
+  border-right: 5px solid var(--income);
+}
+
+.debt-person-card.status-owed-by-me {
+  border-right: 5px solid var(--expense);
+}
+
+.debt-person-card.status-settled {
+  border-right: 5px solid var(--text-muted);
+}
+
+.debt-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.debt-person-info h4 {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.debt-person-phone {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.debt-status-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+}
+
+.debt-status-badge.owed-to-me {
+  background: var(--income-light);
+  color: var(--income);
+}
+
+.debt-status-badge.owed-by-me {
+  background: var(--expense-light);
+  color: var(--expense);
+}
+
+.debt-status-badge.settled {
+  background: var(--bg-surface-hover);
+  color: var(--text-muted);
+}
+
+.debt-breakdown-box {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.debt-mini-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.debt-mini-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.debt-mini-val {
+  font-weight: 800;
+  font-size: 0.95rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  direction: ltr;
+  text-align: right;
+}
+
+.debt-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Debt Transaction Type Selector (2x2 Grid) */
+.debt-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.debt-type-pill input[type="radio"] {
+  display: none;
+}
+
+.debt-type-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  cursor: pointer;
+  text-align: center;
+  transition: var(--transition);
+  height: 100%;
+}
+
+.debt-type-box i {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 0.25rem;
+}
+
+.debt-type-box small {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.debt-type-pill input[type="radio"]:checked + .gave-box {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.debt-type-pill input[type="radio"]:checked + .took-box {
+  background: var(--income-light);
+  border-color: var(--income);
+  color: var(--income);
+}
+
+.debt-type-pill input[type="radio"]:checked + .borrowed-box {
+  background: var(--expense-light);
+  border-color: var(--expense);
+  color: var(--expense);
+}
+
+.debt-type-pill input[type="radio"]:checked + .repaid-box {
+  background: var(--income-light);
+  border-color: var(--income);
+  color: var(--income);
+}
+
+/* Person Ledger Modal Box */
+.person-ledger-hero-box {
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.ledger-hero-item h5 {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.ledger-hero-val {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.ledger-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Helper Utilities */
 .text-sm { font-size: 0.85rem; }
 .text-xs { font-size: 0.75rem; }

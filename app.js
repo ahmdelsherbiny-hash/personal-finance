@@ -1,6 +1,6 @@
 /**
  * محفظتي - Personal Finance Portal
- * Core Application Logic, Accounts Management, Sadaqah Tab & Mobile UX
+ * Core Application Logic, Accounts, Sadaqah, Debts & Third-Party Ledgers, Mobile UX
  */
 
 // Default Configurations
@@ -49,6 +49,74 @@ function getDefaultAccounts() {
     { id: 'acc-2', name: 'حساب بنكي 2', type: 'bank', initialBalance: 5000, color: '#6366f1' },
     { id: 'acc-3', name: 'فودافون كاش', type: 'wallet', initialBalance: 2500, color: '#ef4444' },
     { id: 'acc-4', name: 'بوكيت موني (كاش في المحفظة)', type: 'cash', initialBalance: 1200, color: '#10b981' }
+  ];
+}
+
+// Default Contacts & Debts (Sample Data)
+function getDefaultContacts() {
+  return [
+    { id: 'cont-1', name: 'محمود (زميل العمل)', phone: '01098765432', notes: 'حساب الغداء والمشاوير المشتركة', createdAt: Date.now() - 5000000 },
+    { id: 'cont-2', name: 'كريم عبد الله', phone: '01123456789', notes: 'سلفة جمعية سابقة', createdAt: Date.now() - 4000000 },
+    { id: 'cont-3', name: 'سارة أحمد (أختي)', phone: '', notes: 'مشتريات للمنزل', createdAt: Date.now() - 3000000 }
+  ];
+}
+
+function getDefaultDebtLedger() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+
+  return [
+    {
+      id: 'd-1',
+      contactId: 'cont-1',
+      type: 'lent', // خد مني
+      amount: 500,
+      accountId: 'none',
+      date: `${year}-${monthStr}-02`,
+      note: 'دفعت عنه حساب الغداء المشترك',
+      createdAt: Date.now() - 3000000
+    },
+    {
+      id: 'd-2',
+      contactId: 'cont-1',
+      type: 'collected', // سدد لي
+      amount: 200,
+      accountId: 'none',
+      date: `${year}-${monthStr}-04`,
+      note: 'حول لي 200 جنيه إنستاباي',
+      createdAt: Date.now() - 2000000
+    },
+    {
+      id: 'd-3',
+      contactId: 'cont-2',
+      type: 'borrowed', // أنا استلفت منه
+      amount: 1000,
+      accountId: 'none',
+      date: `${year}-${monthStr}-01`,
+      note: 'استلفت منه لمصاريف طارئة',
+      createdAt: Date.now() - 2500000
+    },
+    {
+      id: 'd-4',
+      contactId: 'cont-2',
+      type: 'repaid', // أنا سددت له
+      amount: 1000,
+      accountId: 'none',
+      date: `${year}-${monthStr}-05`,
+      note: 'سددت له كامل المبلغ (تم التصفية)',
+      createdAt: Date.now() - 1500000
+    },
+    {
+      id: 'd-5',
+      contactId: 'cont-3',
+      type: 'borrowed', // هي دفعت عني
+      amount: 350,
+      accountId: 'none',
+      date: `${year}-${monthStr}-03`,
+      note: 'دفعت عني فاتورة أونلاين',
+      createdAt: Date.now() - 1000000
+    }
   ];
 }
 
@@ -137,6 +205,8 @@ let appState = {
   transactions: [],
   accounts: [],
   expenseCategories: [],
+  contacts: [],
+  debtLedger: [],
   settings: {
     currency: 'EGP',
     userName: 'أحمد',
@@ -146,7 +216,9 @@ let appState = {
   },
   selectedMonth: '',
   editingTxId: null,
-  editingAccId: null
+  editingAccId: null,
+  editingPersonId: null,
+  currentViewingLedgerContactId: null
 };
 
 // Chart Instances
@@ -210,12 +282,36 @@ function loadData() {
     saveCategories();
   }
 
-  // 4. Transactions
+  // 4. Contacts & Debts
+  const savedContacts = localStorage.getItem('mf_contacts');
+  if (savedContacts) {
+    try {
+      appState.contacts = JSON.parse(savedContacts);
+    } catch (e) {
+      appState.contacts = getDefaultContacts();
+    }
+  } else {
+    appState.contacts = getDefaultContacts();
+    saveContacts();
+  }
+
+  const savedDebts = localStorage.getItem('mf_debt_ledger');
+  if (savedDebts) {
+    try {
+      appState.debtLedger = JSON.parse(savedDebts);
+    } catch (e) {
+      appState.debtLedger = getDefaultDebtLedger();
+    }
+  } else {
+    appState.debtLedger = getDefaultDebtLedger();
+    saveDebts();
+  }
+
+  // 5. Transactions
   const savedTx = localStorage.getItem('mf_transactions');
   if (savedTx) {
     try {
       appState.transactions = JSON.parse(savedTx);
-      // Migrate older tx if accountId missing
       appState.transactions.forEach(tx => {
         if (!tx.accountId && appState.accounts.length > 0) {
           tx.accountId = appState.accounts[0].id;
@@ -229,7 +325,7 @@ function loadData() {
     saveTransactions();
   }
 
-  // Set default selected month
+  // Default month
   const today = new Date();
   const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   appState.selectedMonth = currentMonth;
@@ -240,18 +336,12 @@ function loadData() {
 }
 
 // Storage Helpers
-function saveTransactions() {
-  localStorage.setItem('mf_transactions', JSON.stringify(appState.transactions));
-}
-function saveAccounts() {
-  localStorage.setItem('mf_accounts', JSON.stringify(appState.accounts));
-}
-function saveCategories() {
-  localStorage.setItem('mf_expense_categories', JSON.stringify(appState.expenseCategories));
-}
-function saveSettings() {
-  localStorage.setItem('mf_settings', JSON.stringify(appState.settings));
-}
+function saveTransactions() { localStorage.setItem('mf_transactions', JSON.stringify(appState.transactions)); }
+function saveAccounts() { localStorage.setItem('mf_accounts', JSON.stringify(appState.accounts)); }
+function saveCategories() { localStorage.setItem('mf_expense_categories', JSON.stringify(appState.expenseCategories)); }
+function saveContacts() { localStorage.setItem('mf_contacts', JSON.stringify(appState.contacts)); }
+function saveDebts() { localStorage.setItem('mf_debt_ledger', JSON.stringify(appState.debtLedger)); }
+function saveSettings() { localStorage.setItem('mf_settings', JSON.stringify(appState.settings)); }
 
 function initLucide() {
   if (window.lucide) {
@@ -259,21 +349,32 @@ function initLucide() {
   }
 }
 
-// Account Balances Calculation
+// Account Balances Calculation (including linked debt transactions)
 function getAccountCurrentBalance(accountId) {
   const acc = appState.accounts.find(a => a.id === accountId);
   if (!acc) return 0;
 
   let balance = Number(acc.initialBalance || 0);
 
+  // Normal transactions
   appState.transactions.forEach(tx => {
     if (tx.accountId === accountId) {
       const amt = Number(tx.amount || 0);
-      if (tx.type === 'income') {
-        balance += amt;
-      } else {
-        // expense or sadaqah
+      if (tx.type === 'income') balance += amt;
+      else balance -= amt;
+    }
+  });
+
+  // Debt movements that were linked to this account
+  appState.debtLedger.forEach(d => {
+    if (d.accountId && d.accountId === accountId && d.accountId !== 'none') {
+      const amt = Number(d.amount || 0);
+      if (d.type === 'lent' || d.type === 'repaid') {
+        // money went out of account
         balance -= amt;
+      } else if (d.type === 'collected' || d.type === 'borrowed') {
+        // money came into account
+        balance += amt;
       }
     }
   });
@@ -289,9 +390,71 @@ function getTotalInitialWealth() {
   return appState.accounts.reduce((sum, acc) => sum + Number(acc.initialBalance || 0), 0);
 }
 
-// Event Listeners Setup
+// ==========================================================================
+// Debts & Third-Party Balances Calculations
+// ==========================================================================
+// A movement has: type: 'lent' | 'collected' | 'borrowed' | 'repaid'
+// totalGiven (خد مني): 'lent' + 'repaid'
+// totalReceived (أعطاني): 'collected' + 'borrowed'
+// net = totalGiven - totalReceived
+// If net > 0: He owes me (ليا عنده)
+// If net < 0: I owe him (عليا ليه)
+// If net === 0: Settled (متصفي)
+function getContactStats(contactId) {
+  const movements = appState.debtLedger.filter(d => d.contactId === contactId);
+
+  let totalGiven = 0;    // ما أخذه مني
+  let totalReceived = 0; // ما أعطاه لي
+
+  movements.forEach(m => {
+    const amt = Number(m.amount || 0);
+    if (m.type === 'lent' || m.type === 'repaid') {
+      totalGiven += amt;
+    } else if (m.type === 'collected' || m.type === 'borrowed') {
+      totalReceived += amt;
+    }
+  });
+
+  const net = totalGiven - totalReceived;
+  return {
+    totalGiven,
+    totalReceived,
+    net,
+    movementsCount: movements.length
+  };
+}
+
+function getOverallDebtsOverview() {
+  let totalOwedToMe = 0; // ليا برة
+  let totalOwedByMe = 0; // عليا للغير
+  let countOwedToMe = 0;
+  let countOwedByMe = 0;
+
+  appState.contacts.forEach(c => {
+    const stats = getContactStats(c.id);
+    if (stats.net > 0) {
+      totalOwedToMe += stats.net;
+      countOwedToMe++;
+    } else if (stats.net < 0) {
+      totalOwedByMe += Math.abs(stats.net);
+      countOwedByMe++;
+    }
+  });
+
+  const netPosition = totalOwedToMe - totalOwedByMe;
+  return {
+    totalOwedToMe,
+    totalOwedByMe,
+    netPosition,
+    countOwedToMe,
+    countOwedByMe,
+    totalPeople: appState.contacts.length
+  };
+}
+
+// Setup Event Listeners
 function setupEventListeners() {
-  // Navigation tabs (desktop sidebar & mobile bottom nav)
+  // Navigation tabs
   const allNavButtons = document.querySelectorAll('.nav-item, .bottom-nav-item');
   allNavButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -316,13 +479,8 @@ function setupEventListeners() {
     });
   }
 
-  if (sidebarCloseBtn) {
-    sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
-  }
-
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', closeMobileSidebar);
-  }
+  if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileSidebar);
 
   // Theme Toggle
   const themeToggle = document.getElementById('themeToggle');
@@ -356,15 +514,12 @@ function setupEventListeners() {
     if (e.target === document.getElementById('txModalBackdrop')) closeTxModal();
   });
 
-  // Modal Transaction Type Radios
+  // Transaction type radios
   const typeRadios = document.querySelectorAll('input[name="txType"]');
   typeRadios.forEach(radio => {
-    radio.addEventListener('change', () => {
-      populateCategoryOptions(radio.value);
-    });
+    radio.addEventListener('change', () => populateCategoryOptions(radio.value));
   });
 
-  // Submit Transaction Form
   document.getElementById('txForm').addEventListener('submit', handleTxFormSubmit);
 
   // Table filters & Search
@@ -372,6 +527,10 @@ function setupEventListeners() {
   document.getElementById('txTypeFilter').addEventListener('change', renderTransactionsTable);
   document.getElementById('txAccountFilter').addEventListener('change', renderTransactionsTable);
   document.getElementById('txCategoryFilter').addEventListener('change', renderTransactionsTable);
+
+  // Debts Search & Filter
+  document.getElementById('debtsSearchInput').addEventListener('input', renderDebtsTab);
+  document.getElementById('debtsFilterSelect').addEventListener('change', renderDebtsTab);
 
   // CSV Export
   document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
@@ -396,6 +555,37 @@ function setupEventListeners() {
   document.getElementById('categoryForm').addEventListener('submit', handleCategoryFormSubmit);
   document.getElementById('categoryModalBackdrop').addEventListener('click', (e) => {
     if (e.target === document.getElementById('categoryModalBackdrop')) closeCategoryModal();
+  });
+
+  // Person Modal (Debts)
+  document.getElementById('closePersonModalBtn').addEventListener('click', closePersonModal);
+  document.getElementById('cancelPersonModalBtn').addEventListener('click', closePersonModal);
+  document.getElementById('personForm').addEventListener('submit', handlePersonFormSubmit);
+  document.getElementById('personModalBackdrop').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('personModalBackdrop')) closePersonModal();
+  });
+
+  // Debt Movement Modal
+  document.getElementById('closeDebtTxModalBtn').addEventListener('click', closeDebtTxModal);
+  document.getElementById('cancelDebtTxModalBtn').addEventListener('click', closeDebtTxModal);
+  document.getElementById('debtTxForm').addEventListener('submit', handleDebtTxFormSubmit);
+  document.getElementById('debtTxModalBackdrop').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('debtTxModalBackdrop')) closeDebtTxModal();
+  });
+
+  // Person Ledger Modal
+  document.getElementById('closePersonLedgerModalBtn').addEventListener('click', closePersonLedgerModal);
+  document.getElementById('closePersonLedgerBottomBtn').addEventListener('click', closePersonLedgerModal);
+  document.getElementById('ledgerAddMovementBtn').addEventListener('click', () => {
+    if (appState.currentViewingLedgerContactId) {
+      closePersonLedgerModal();
+      openDebtTxModal(appState.currentViewingLedgerContactId);
+    }
+  });
+  document.getElementById('ledgerSettleBtn').addEventListener('click', () => {
+    if (appState.currentViewingLedgerContactId) {
+      settlePersonAccount(appState.currentViewingLedgerContactId);
+    }
   });
 
   // Settings Save
@@ -440,7 +630,11 @@ function setupEventListeners() {
   document.getElementById('loadSampleDataBtn').addEventListener('click', () => {
     if (confirm('هل ترغب في إعادة تحميل بيانات تجريبية مع الاحتفاظ بالبيانات السابقة؟')) {
       appState.transactions = [...getSampleTransactions(), ...appState.transactions];
+      appState.contacts = [...getDefaultContacts(), ...appState.contacts];
+      appState.debtLedger = [...getDefaultDebtLedger(), ...appState.debtLedger];
       saveTransactions();
+      saveContacts();
+      saveDebts();
       populateMonthFilter();
       renderAll();
       showToast('تم تحميل البيانات التجريبية', 'success');
@@ -448,9 +642,13 @@ function setupEventListeners() {
   });
 
   document.getElementById('clearAllDataBtn').addEventListener('click', () => {
-    if (confirm('تحذير: هل أنت متأكد تماماً من رغبتك في مسح جميع المعاملات نهائياً؟')) {
+    if (confirm('تحذير: هل أنت متأكد تماماً من رغبتك في مسح جميع البيانات؟')) {
       appState.transactions = [];
+      appState.contacts = [];
+      appState.debtLedger = [];
       saveTransactions();
+      saveContacts();
+      saveDebts();
       populateMonthFilter();
       renderAll();
       showToast('تم مسح جميع البيانات', 'info');
@@ -466,7 +664,6 @@ function closeMobileSidebar() {
 }
 
 function switchTab(tabId) {
-  // Update navs
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.getAttribute('data-tab') === tabId);
   });
@@ -474,7 +671,6 @@ function switchTab(tabId) {
     el.classList.toggle('active', el.getAttribute('data-tab') === tabId);
   });
 
-  // Update tabs
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
   const targetPane = document.getElementById(`tab-${tabId}`);
   if (targetPane) targetPane.classList.add('active');
@@ -483,6 +679,7 @@ function switchTab(tabId) {
     dashboard: 'لوحة التحكم',
     accounts: 'حساباتي وأرصدتي',
     transactions: 'سجل المعاملات',
+    debts: 'أرصدة الغير والمستحقات',
     sadaqah: 'الصدقات والزكاة',
     analytics: 'التقارير والتحليلات',
     budgets: 'الميزانية الشهرية',
@@ -490,18 +687,11 @@ function switchTab(tabId) {
   };
   document.getElementById('pageTitle').textContent = titles[tabId] || 'محفظتي';
 
-  // Render specific views on tab switch
-  if (tabId === 'dashboard' || tabId === 'analytics') {
-    setTimeout(renderCharts, 100);
-  }
-  if (tabId === 'accounts' || tabId === 'settings') {
-    renderAccountsView();
-  }
-  if (tabId === 'sadaqah') {
-    renderSadaqahTab();
-  }
+  if (tabId === 'dashboard' || tabId === 'analytics') setTimeout(renderCharts, 100);
+  if (tabId === 'accounts' || tabId === 'settings') renderAccountsView();
+  if (tabId === 'debts') renderDebtsTab();
+  if (tabId === 'sadaqah') renderSadaqahTab();
 
-  // Scroll to top
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -520,6 +710,7 @@ function updateCurrencyDisplay() {
   document.getElementById('currencySymbolText').textContent = curr;
   document.getElementById('modalCurrencySymbol').textContent = curr;
   document.getElementById('accCurrencySymbol').textContent = curr;
+  document.getElementById('debtCurrencySymbol').textContent = curr;
 }
 
 function formatMoney(amount) {
@@ -560,7 +751,6 @@ function populateMonthFilter() {
   }
 }
 
-// Category & Account Options Helpers
 function getCategoriesForType(type) {
   if (type === 'income') return INCOME_CATEGORIES;
   if (type === 'sadaqah') return SADAQAH_CATEGORIES;
@@ -586,7 +776,6 @@ function populateCategoryOptions(type = 'expense', selectedCategory = '') {
     select.appendChild(opt);
   });
 
-  // Also update filter dropdown in transactions tab
   const filterSelect = document.getElementById('txCategoryFilter');
   const allCats = [...appState.expenseCategories, ...SADAQAH_CATEGORIES, ...INCOME_CATEGORIES];
   let filterHtml = '<option value="all">كل الفئات</option>';
@@ -609,16 +798,26 @@ function populateAccountOptions(selectedAccountId = '') {
     select.appendChild(opt);
   });
 
-  // Also update filter dropdown in transactions tab
   const filterSelect = document.getElementById('txAccountFilter');
   let filterHtml = '<option value="all">كل الحسابات</option>';
   appState.accounts.forEach(a => {
     filterHtml += `<option value="${a.id}">${a.name}</option>`;
   });
   filterSelect.innerHTML = filterHtml;
+
+  // Populate linked account in debt modal
+  const debtAccSelect = document.getElementById('debtLinkedAccount');
+  if (debtAccSelect) {
+    let debtAccHtml = '<option value="none">لا (معاملة خارجية بدون تأثير على رصيد حساباتي)</option>';
+    appState.accounts.forEach(a => {
+      const b = getAccountCurrentBalance(a.id);
+      debtAccHtml += `<option value="${a.id}">نعم، من/إلى: ${a.name} (رصيد: ${formatMoney(b)})</option>`;
+    });
+    debtAccSelect.innerHTML = debtAccHtml;
+  }
 }
 
-// Modal: Add / Edit Transaction
+// Modal: Transaction
 function openAddModal(forcedType = null, editTxId = null) {
   const backdrop = document.getElementById('txModalBackdrop');
   const form = document.getElementById('txForm');
@@ -812,10 +1011,9 @@ function deleteAccount(accId) {
     return;
   }
 
-  // Check if transactions use this account
   const used = appState.transactions.filter(t => t.accountId === accId).length;
   const confirmMsg = used > 0
-    ? `تحذير: هذا الحساب مرتبط بـ ${used} معاملة. حذفه قد يربك إحصائيات المعاملات السابقة. هل ترغب فعلاً في حذفه؟`
+    ? `تحذير: هذا الحساب مرتبط بـ ${used} معاملة. حذفه قد يؤثر على الحسابات السابقة. هل ترغب فعلاً في حذفه؟`
     : 'هل أنت متأكد من حذف هذا الحساب؟';
 
   if (confirm(confirmMsg)) {
@@ -877,7 +1075,454 @@ function deleteCategory(catId) {
   }
 }
 
-// Render Master
+// ==========================================================================
+// Modal: Person Manager (أرصدة الغير)
+// ==========================================================================
+function openPersonModal(personId = null) {
+  const backdrop = document.getElementById('personModalBackdrop');
+  const form = document.getElementById('personForm');
+  form.reset();
+
+  if (personId) {
+    appState.editingPersonId = personId;
+    const person = appState.contacts.find(p => p.id === personId);
+    if (person) {
+      document.getElementById('personModalTitle').textContent = 'تعديل بيانات الشخص';
+      document.getElementById('personName').value = person.name;
+      document.getElementById('personPhone').value = person.phone || '';
+      document.getElementById('personNotes').value = person.notes || '';
+    }
+  } else {
+    appState.editingPersonId = null;
+    document.getElementById('personModalTitle').textContent = 'إضافة شخص جديد';
+  }
+
+  backdrop.classList.add('open');
+  initLucide();
+}
+
+function closePersonModal() {
+  document.getElementById('personModalBackdrop').classList.remove('open');
+  appState.editingPersonId = null;
+}
+
+function handlePersonFormSubmit(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('personName').value.trim();
+  const phone = document.getElementById('personPhone').value.trim();
+  const notes = document.getElementById('personNotes').value.trim();
+
+  if (!name) {
+    showToast('يرجى إدخال اسم الشخص', 'error');
+    return;
+  }
+
+  if (appState.editingPersonId) {
+    const idx = appState.contacts.findIndex(c => c.id === appState.editingPersonId);
+    if (idx !== -1) {
+      appState.contacts[idx] = { ...appState.contacts[idx], name, phone, notes };
+      showToast('تم تعديل بيانات الشخص', 'success');
+    }
+  } else {
+    const newPerson = {
+      id: 'cont-' + Date.now(),
+      name,
+      phone,
+      notes,
+      createdAt: Date.now()
+    };
+    appState.contacts.push(newPerson);
+    showToast('تمت إضافة الشخص بنجاح', 'success');
+  }
+
+  saveContacts();
+  closePersonModal();
+  renderDebtsTab();
+}
+
+function deletePerson(contactId) {
+  const person = appState.contacts.find(c => c.id === contactId);
+  const name = person ? person.name : 'هذا الشخص';
+
+  if (confirm(`هل أنت متأكد من حذف ${name} وجميع سجل حركاته المالية؟`)) {
+    appState.contacts = appState.contacts.filter(c => c.id !== contactId);
+    appState.debtLedger = appState.debtLedger.filter(d => d.contactId !== contactId);
+    saveContacts();
+    saveDebts();
+    renderDebtsTab();
+    showToast(`تم حذف ${name}`, 'info');
+  }
+}
+
+// ==========================================================================
+// Modal: Debt Transaction (حركة مالية لشخص)
+// ==========================================================================
+function openDebtTxModal(preselectedContactId = null) {
+  if (appState.contacts.length === 0) {
+    showToast('يرجى إضافة شخص أولاً قبل تسجيل حركة', 'info');
+    openPersonModal();
+    return;
+  }
+
+  const backdrop = document.getElementById('debtTxModalBackdrop');
+  const form = document.getElementById('debtTxForm');
+  form.reset();
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('debtTxDate').value = todayStr;
+
+  // Populate Contacts select
+  const contactSelect = document.getElementById('debtTxContactId');
+  contactSelect.innerHTML = appState.contacts.map(c => {
+    const stats = getContactStats(c.id);
+    let stateText = 'متصفي';
+    if (stats.net > 0) stateText = `لك عنده: ${formatMoney(stats.net)}`;
+    else if (stats.net < 0) stateText = `عليك له: ${formatMoney(Math.abs(stats.net))}`;
+
+    const isSelected = c.id === preselectedContactId ? 'selected' : '';
+    return `<option value="${c.id}" ${isSelected}>${c.name} (${stateText})</option>`;
+  }).join('');
+
+  // Populate Accounts select
+  populateAccountOptions();
+
+  backdrop.classList.add('open');
+  initLucide();
+}
+
+function closeDebtTxModal() {
+  document.getElementById('debtTxModalBackdrop').classList.remove('open');
+}
+
+function handleDebtTxFormSubmit(e) {
+  e.preventDefault();
+
+  const contactId = document.getElementById('debtTxContactId').value;
+  const type = document.querySelector('input[name="debtDirection"]:checked').value;
+  const amount = parseFloat(document.getElementById('debtTxAmount').value);
+  const date = document.getElementById('debtTxDate').value;
+  const accountId = document.getElementById('debtLinkedAccount').value;
+  const note = document.getElementById('debtTxNote').value.trim();
+
+  if (isNaN(amount) || amount <= 0) {
+    showToast('يرجى إدخال مبلغ صحيح أكبر من الصفر', 'error');
+    return;
+  }
+
+  const newMovement = {
+    id: 'd-' + Date.now(),
+    contactId,
+    type,
+    amount,
+    accountId,
+    date,
+    note,
+    createdAt: Date.now()
+  };
+
+  appState.debtLedger.unshift(newMovement);
+  saveDebts();
+  closeDebtTxModal();
+  renderDebtsTab();
+  renderAccountsView(); // if account was linked, balance updates!
+  renderStats(getFilteredMonthTransactions());
+
+  const person = appState.contacts.find(c => c.id === contactId);
+  showToast(`تم تسجيل الحركة بنجاح لـ ${person ? person.name : ''}`, 'success');
+
+  // If ledger modal was open, refresh it
+  if (appState.currentViewingLedgerContactId === contactId) {
+    openPersonLedger(contactId);
+  }
+}
+
+function deleteDebtMovement(movementId) {
+  if (confirm('هل أنت متأكد من حذف هذه الحركة من السجل؟')) {
+    appState.debtLedger = appState.debtLedger.filter(d => d.id !== movementId);
+    saveDebts();
+    renderDebtsTab();
+    renderAccountsView();
+    renderStats(getFilteredMonthTransactions());
+    if (appState.currentViewingLedgerContactId) {
+      openPersonLedger(appState.currentViewingLedgerContactId);
+    }
+    showToast('تم حذف الحركة', 'info');
+  }
+}
+
+// Settle Person Account
+function settlePersonAccount(contactId) {
+  const stats = getContactStats(contactId);
+  const person = appState.contacts.find(c => c.id === contactId);
+  if (!person) return;
+
+  if (stats.net === 0) {
+    showToast('الحساب متصفي بالفعل! (الرصيد صفر)', 'info');
+    return;
+  }
+
+  const isOwedToMe = stats.net > 0;
+  const promptText = isOwedToMe
+    ? `هل قام ${person.name} بسداد كامل المبلغ المتبقي (${formatMoney(stats.net)}) وتريد تصفية الحساب؟`
+    : `هل قمت بسداد كامل المبلغ المتبقي لـ ${person.name} (${formatMoney(Math.abs(stats.net))}) وتريد تصفية الحساب؟`;
+
+  if (confirm(promptText)) {
+    const settlementType = isOwedToMe ? 'collected' : 'repaid';
+    const settlementMovement = {
+      id: 'd-' + Date.now(),
+      contactId,
+      type: settlementType,
+      amount: Math.abs(stats.net),
+      accountId: 'none',
+      date: new Date().toISOString().split('T')[0],
+      note: 'تسوية وتصفير الحساب بالكامل ✅',
+      createdAt: Date.now()
+    };
+
+    appState.debtLedger.unshift(settlementMovement);
+    saveDebts();
+    renderDebtsTab();
+    if (appState.currentViewingLedgerContactId === contactId) {
+      openPersonLedger(contactId);
+    }
+    showToast(`تمت تسوية وتصفير حساب ${person.name} بنجاح 🎉`, 'success');
+  }
+}
+
+// ==========================================================================
+// Modal: Person Detailed Ledger View (عرض سجل الشخص التفصيلي)
+// ==========================================================================
+function openPersonLedger(contactId) {
+  appState.currentViewingLedgerContactId = contactId;
+  const person = appState.contacts.find(c => c.id === contactId);
+  if (!person) return;
+
+  const backdrop = document.getElementById('personLedgerModalBackdrop');
+  document.getElementById('ledgerPersonName').textContent = `سجل حساب: ${person.name}`;
+  document.getElementById('ledgerPersonSub').textContent = person.phone ? `هاتف: ${person.phone} • ${person.notes || ''}` : (person.notes || '');
+
+  const stats = getContactStats(contactId);
+  const heroBox = document.getElementById('personLedgerHeroBox');
+
+  let netColor = 'var(--text-muted)';
+  let netStatusLabel = 'الحساب متصفي ومسوى';
+  let netFormatted = '0.00';
+
+  if (stats.net > 0) {
+    netColor = 'var(--income)';
+    netStatusLabel = 'لك عنده (مستحق لك)';
+    netFormatted = `+ ${formatMoney(stats.net)}`;
+  } else if (stats.net < 0) {
+    netColor = 'var(--expense)';
+    netStatusLabel = 'عليك له (دين عليك)';
+    netFormatted = `- ${formatMoney(Math.abs(stats.net))}`;
+  }
+
+  heroBox.innerHTML = `
+    <div class="ledger-hero-item">
+      <h5>إجمالي ما أخذه منك (خد مني)</h5>
+      <div class="ledger-hero-val" style="color:var(--primary);">${formatMoney(stats.totalGiven)}</div>
+    </div>
+    <div class="ledger-hero-item">
+      <h5>إجمالي ما أعطاه لك (أعطاني)</h5>
+      <div class="ledger-hero-val" style="color:var(--income);">${formatMoney(stats.totalReceived)}</div>
+    </div>
+    <div class="ledger-hero-item" style="border-right: 1px solid var(--border-color);">
+      <h5>الرصيد الصافي (${netStatusLabel})</h5>
+      <div class="ledger-hero-val" style="color:${netColor};">${netFormatted}</div>
+    </div>
+  `;
+
+  // Render Table of movements
+  const movements = appState.debtLedger.filter(d => d.contactId === contactId);
+  movements.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const tbody = document.getElementById('personLedgerTableBody');
+
+  if (movements.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">لا توجد حركات مسجلة لهذا الشخص حتى الآن.</td></tr>';
+  } else {
+    tbody.innerHTML = movements.map(m => {
+      let typeLabel = '';
+      let typeTagClass = '';
+      let sign = '';
+
+      if (m.type === 'lent') {
+        typeLabel = 'خد مني (أعطيته)';
+        typeTagClass = 'expense';
+        sign = '📤';
+      } else if (m.type === 'collected') {
+        typeLabel = 'أعطاني (سدد لي)';
+        typeTagClass = 'income';
+        sign = '📥';
+      } else if (m.type === 'borrowed') {
+        typeLabel = 'أعطاني سلفة (عليا ليه)';
+        typeTagClass = 'expense';
+        sign = '📥';
+      } else if (m.type === 'repaid') {
+        typeLabel = 'أنا سددت له';
+        typeTagClass = 'income';
+        sign = '📤';
+      }
+
+      const acc = appState.accounts.find(a => a.id === m.accountId);
+      const accText = acc ? acc.name : '<span style="color:var(--text-muted)">خارجي</span>';
+
+      return `
+        <tr>
+          <td>${m.date}</td>
+          <td><span class="type-tag ${typeTagClass}">${sign} ${typeLabel}</span></td>
+          <td style="font-weight:800; direction:ltr; text-align:right;">${formatMoney(m.amount)}</td>
+          <td>${accText}</td>
+          <td>${m.note || '-'}</td>
+          <td class="actions-col">
+            <button class="action-btn-mini delete" onclick="deleteDebtMovement('${m.id}')" title="حذف الحركة">
+              <i data-lucide="trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  backdrop.classList.add('open');
+  initLucide();
+}
+
+function closePersonLedgerModal() {
+  document.getElementById('personLedgerModalBackdrop').classList.remove('open');
+  appState.currentViewingLedgerContactId = null;
+}
+
+// ==========================================================================
+// Render Debts Tab View (أرصدة الغير)
+// ==========================================================================
+function renderDebtsTab() {
+  const overview = getOverallDebtsOverview();
+
+  // Top KPI values
+  document.getElementById('debtsOwedToMeVal').textContent = formatMoney(overview.totalOwedToMe);
+  document.getElementById('debtsOwedToMeCount').textContent = `${overview.countOwedToMe} أشخاص مدينين لك`;
+
+  document.getElementById('debtsOwedByMeVal').textContent = formatMoney(overview.totalOwedByMe);
+  document.getElementById('debtsOwedByMeCount').textContent = `${overview.countOwedByMe} أشخاص دائنين لك`;
+
+  document.getElementById('debtsNetPositionVal').textContent = formatMoney(overview.netPosition);
+  document.getElementById('debtsNetPositionVal').style.color = overview.netPosition >= 0 ? 'var(--income)' : 'var(--expense)';
+  document.getElementById('debtsNetPositionStatus').textContent = overview.netPosition > 0
+    ? 'صافي رصيدك مع الغير إيجابي (لك فائض عندهم)'
+    : (overview.netPosition < 0 ? 'صافي رصيدك سلبي (عليك ديون للغير)' : 'متزن تماماً');
+
+  document.getElementById('debtsPeopleCountVal').textContent = overview.totalPeople;
+
+  // Filter & Search
+  const query = document.getElementById('debtsSearchInput').value.toLowerCase().trim();
+  const filterType = document.getElementById('debtsFilterSelect').value;
+
+  let filtered = [...appState.contacts];
+
+  if (query) {
+    filtered = filtered.filter(c => c.name.toLowerCase().includes(query) || (c.phone && c.phone.includes(query)) || (c.notes && c.notes.toLowerCase().includes(query)));
+  }
+
+  if (filterType === 'owed_to_me') {
+    filtered = filtered.filter(c => getContactStats(c.id).net > 0);
+  } else if (filterType === 'owed_by_me') {
+    filtered = filtered.filter(c => getContactStats(c.id).net < 0);
+  } else if (filterType === 'settled') {
+    filtered = filtered.filter(c => getContactStats(c.id).net === 0);
+  }
+
+  const container = document.getElementById('debtsPeopleGrid');
+  const emptyState = document.getElementById('noDebtsState');
+
+  if (filtered.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+  }
+
+  emptyState.classList.add('hidden');
+
+  container.innerHTML = filtered.map(person => {
+    const stats = getContactStats(person.id);
+
+    let statusCardClass = 'status-settled';
+    let badgeClass = 'settled';
+    let badgeText = 'الحساب متصفي (0.00)';
+    let netColor = 'var(--text-muted)';
+
+    if (stats.net > 0) {
+      statusCardClass = 'status-owed-to-me';
+      badgeClass = 'owed-to-me';
+      badgeText = `🟢 لك عنده: ${formatMoney(stats.net)}`;
+      netColor = 'var(--income)';
+    } else if (stats.net < 0) {
+      statusCardClass = 'status-owed-by-me';
+      badgeClass = 'owed-by-me';
+      badgeText = `🔴 عليك له: ${formatMoney(Math.abs(stats.net))}`;
+      netColor = 'var(--expense)';
+    }
+
+    return `
+      <div class="debt-person-card ${statusCardClass}">
+        <div>
+          <div class="debt-card-header">
+            <div class="debt-person-info">
+              <h4>${person.name}</h4>
+              <div class="debt-person-phone">
+                ${person.phone ? `<span>📱 ${person.phone}</span>` : ''}
+                ${person.notes ? `<span>• ${person.notes}</span>` : ''}
+              </div>
+            </div>
+            <span class="debt-status-badge ${badgeClass}">${badgeText}</span>
+          </div>
+
+          <div class="debt-breakdown-box">
+            <div class="debt-mini-stat">
+              <span class="debt-mini-label">خد مني (إجمالي):</span>
+              <span class="debt-mini-val" style="color:var(--primary);">${formatMoney(stats.totalGiven)}</span>
+            </div>
+            <div class="debt-mini-stat">
+              <span class="debt-mini-label">أعطاني (إجمالي):</span>
+              <span class="debt-mini-val" style="color:var(--income);">${formatMoney(stats.totalReceived)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="debt-card-actions">
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="openDebtTxModal('${person.id}')">
+              <i data-lucide="plus"></i> حركة جديدة
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="openPersonLedger('${person.id}')">
+              <i data-lucide="file-text"></i> عرض السجل (${stats.movementsCount})
+            </button>
+          </div>
+
+          <div class="action-btns">
+            ${stats.net !== 0 ? `
+              <button class="action-btn-mini" onclick="settlePersonAccount('${person.id}')" title="تسوية الحساب (تصفير)">
+                <i data-lucide="check-check"></i>
+              </button>
+            ` : ''}
+            <button class="action-btn-mini" onclick="openPersonModal('${person.id}')" title="تعديل">
+              <i data-lucide="edit-3"></i>
+            </button>
+            <button class="action-btn-mini delete" onclick="deletePerson('${person.id}')" title="حذف الشخص">
+              <i data-lucide="trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  initLucide();
+}
+
+// Master Render
 function renderAll() {
   const filtered = getFilteredMonthTransactions();
   renderStats(filtered);
@@ -885,6 +1530,7 @@ function renderAll() {
   renderRecentDashboardList(filtered);
   renderAccountsView();
   renderTransactionsTable();
+  renderDebtsTab();
   renderSadaqahTab();
   renderCharts();
   renderBudgets();
@@ -921,7 +1567,6 @@ function renderStats(monthTx) {
   const totalCurrentWealth = getTotalCurrentWealth();
   const netSavedThisMonth = totalIncome - totalExpense - totalSadaqah;
   const savingsRate = totalIncome > 0 ? Math.max(0, Math.round((netSavedThisMonth / totalIncome) * 100)) : 0;
-  const sadaqahRatio = totalIncome > 0 ? ((totalSadaqah / totalIncome) * 100).toFixed(1) : 0;
 
   document.getElementById('netBalanceVal').textContent = formatMoney(totalCurrentWealth);
   document.getElementById('savingsRateVal').textContent = `توفير الشهر: ${formatMoney(netSavedThisMonth)} (${savingsRate}%)`;
@@ -932,8 +1577,15 @@ function renderStats(monthTx) {
   document.getElementById('totalExpenseVal').textContent = formatMoney(totalExpense);
   document.getElementById('expenseCountVal').textContent = `${expenseCount} عملية صرف`;
 
-  document.getElementById('dashSadaqahVal').textContent = formatMoney(totalSadaqah);
-  document.getElementById('dashSadaqahRatio').textContent = `نسبة ${sadaqahRatio}% من الدخل`;
+  // Quick Debts card on Dashboard
+  const debtsOverview = getOverallDebtsOverview();
+  const debtsNetEl = document.getElementById('dashDebtsNetVal');
+  const debtsSubEl = document.getElementById('dashDebtsSubtext');
+  if (debtsNetEl && debtsSubEl) {
+    debtsNetEl.textContent = formatMoney(debtsOverview.netPosition);
+    debtsNetEl.style.color = debtsOverview.netPosition >= 0 ? 'var(--income)' : 'var(--expense)';
+    debtsSubEl.textContent = `ليا برة: ${formatMoney(debtsOverview.totalOwedToMe)} | عليا: ${formatMoney(debtsOverview.totalOwedByMe)}`;
+  }
 }
 
 // 2. Dashboard Accounts Chip Grid
@@ -975,7 +1627,6 @@ function renderAccountsView() {
     document.getElementById('totalInitialWealthVal').textContent = formatMoney(initialWealth);
   }
 
-  // Cards on Accounts Tab
   if (container) {
     container.innerHTML = appState.accounts.map(acc => {
       const curBal = getAccountCurrentBalance(acc.id);
@@ -1031,7 +1682,6 @@ function renderAccountsView() {
     }).join('');
   }
 
-  // Table on Settings Tab
   if (tableBody) {
     tableBody.innerHTML = appState.accounts.map(acc => {
       const curBal = getAccountCurrentBalance(acc.id);
@@ -1059,7 +1709,6 @@ function renderAccountsView() {
     }).join('');
   }
 
-  // Update Zakat calculation liquid total
   if (document.getElementById('zakatTotalLiquid')) {
     const liquidTotal = Math.max(0, totalWealth);
     const zakatDue = liquidTotal * 0.025;
@@ -1089,7 +1738,6 @@ function renderSadaqahTab() {
     document.getElementById('sadaqahRatioVal').textContent = `${sadaqahRatio}%`;
     document.getElementById('sadaqahGoalVal').textContent = formatMoney(target);
 
-    // Goal progress bar
     const progressBar = document.getElementById('sadaqahProgressBar');
     const progressText = document.getElementById('sadaqahProgressText');
     const remainingText = document.getElementById('sadaqahProgressRemaining');
@@ -1109,7 +1757,6 @@ function renderSadaqahTab() {
     }
   }
 
-  // Sadaqah History List
   const historyList = document.getElementById('sadaqahHistoryList');
   if (historyList) {
     if (allSadaqahTx.length === 0) {
@@ -1121,7 +1768,6 @@ function renderSadaqahTab() {
       return;
     }
 
-    // Sort descending
     const sorted = [...allSadaqahTx].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     historyList.innerHTML = sorted.map(tx => {
@@ -1260,7 +1906,6 @@ function renderTransactionsTable() {
   emptyState.classList.add('hidden');
   table.classList.remove('hidden');
 
-  // Render Table for Desktop
   tbody.innerHTML = filtered.map(tx => {
     const cat = getCategoryInfo(tx.type, tx.category);
     const acc = appState.accounts.find(a => a.id === tx.accountId) || { name: 'غير محدد' };
@@ -1272,9 +1917,7 @@ function renderTransactionsTable() {
 
     return `
       <tr>
-        <td>
-          <span class="type-tag ${typeTagClass}">${typeLabel}</span>
-        </td>
+        <td><span class="type-tag ${typeTagClass}">${typeLabel}</span></td>
         <td>
           <span style="display:inline-flex; align-items:center; gap:0.4rem;">
             <span>${cat.icon}</span>
@@ -1301,7 +1944,6 @@ function renderTransactionsTable() {
     `;
   }).join('');
 
-  // Render Mobile Cards
   if (mobileContainer) {
     mobileContainer.innerHTML = filtered.map(tx => {
       const cat = getCategoryInfo(tx.type, tx.category);
@@ -1390,7 +2032,6 @@ function renderCharts() {
     catColors.push(info.color);
   });
 
-  // Doughnut Chart
   const doughnutCtx = document.getElementById('categoryDoughnutChart');
   if (doughnutCtx) {
     if (categoryChart) categoryChart.destroy();
@@ -1450,7 +2091,6 @@ function renderCharts() {
     }
   }
 
-  // Daily Spending Chart
   const barCtx = document.getElementById('dailySpendingBarChart');
   if (barCtx) {
     if (dailyChart) dailyChart.destroy();
@@ -1460,9 +2100,7 @@ function renderCharts() {
     const daysLabels = [];
     const dailyExpenses = new Array(daysInMonth).fill(0);
 
-    for (let d = 1; d <= daysInMonth; d++) {
-      daysLabels.push(`${d}`);
-    }
+    for (let d = 1; d <= daysInMonth; d++) daysLabels.push(`${d}`);
 
     expenseTx.forEach(tx => {
       if (tx.date) {
@@ -1497,20 +2135,13 @@ function renderCharts() {
           }
         },
         scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 10 } }
-          },
-          y: {
-            grid: { color: gridColor },
-            ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 10 } }
-          }
+          x: { grid: { display: false }, ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 10 } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 10 } } }
         }
       }
     });
   }
 
-  // Monthly Comparison Trend (Last 6 Months)
   const trendCtx = document.getElementById('monthlyTrendChart');
   if (trendCtx) {
     if (monthlyTrendChart) monthlyTrendChart.destroy();
@@ -1572,7 +2203,6 @@ function renderCharts() {
     });
   }
 
-  // Account Spending Distribution
   const payCtx = document.getElementById('paymentMethodsChart');
   if (payCtx) {
     if (paymentMethodsChart) paymentMethodsChart.destroy();
@@ -1618,7 +2248,6 @@ function renderCharts() {
     });
   }
 
-  // Detailed Breakdown List
   renderDetailedCategoryBreakdown(catKeys, categoryTotals);
 }
 
@@ -1742,11 +2371,13 @@ function exportToCSV() {
 // 11. Backup & Restore
 function downloadBackup() {
   const backupData = {
-    version: '2.0',
+    version: '3.0',
     exportDate: new Date().toISOString(),
     settings: appState.settings,
     accounts: appState.accounts,
     expenseCategories: appState.expenseCategories,
+    contacts: appState.contacts,
+    debtLedger: appState.debtLedger,
     transactions: appState.transactions
   };
 
@@ -1772,10 +2403,14 @@ function handleRestoreFile(e) {
         appState.transactions = data.transactions;
         if (data.accounts) appState.accounts = data.accounts;
         if (data.expenseCategories) appState.expenseCategories = data.expenseCategories;
+        if (data.contacts) appState.contacts = data.contacts;
+        if (data.debtLedger) appState.debtLedger = data.debtLedger;
         if (data.settings) appState.settings = { ...appState.settings, ...data.settings };
         
         saveAccounts();
         saveCategories();
+        saveContacts();
+        saveDebts();
         saveSettings();
         saveTransactions();
         populateMonthFilter();
@@ -1813,7 +2448,7 @@ function showToast(message, type = 'info') {
   }, 3200);
 }
 
-// Global scope export for inline onclick handlers
+// Global scope exports for inline onclick handlers
 window.switchTab = switchTab;
 window.openAddModal = openAddModal;
 window.deleteTransaction = deleteTransaction;
@@ -1821,3 +2456,9 @@ window.openAccountModal = openAccountModal;
 window.deleteAccount = deleteAccount;
 window.openCategoryModal = openCategoryModal;
 window.deleteCategory = deleteCategory;
+window.openPersonModal = openPersonModal;
+window.deletePerson = deletePerson;
+window.openDebtTxModal = openDebtTxModal;
+window.deleteDebtMovement = deleteDebtMovement;
+window.openPersonLedger = openPersonLedger;
+window.settlePersonAccount = settlePersonAccount;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>محفظتي | Personal Finance Portal</title>
-  <meta name="description" content="بوابة شخصية ذكية وسريعة لتتبع المصاريف، الحسابات، والصدقات مع تحليلات ورسوم بيانية.">
+  <meta name="description" content="بوابة شخصية ذكية وسريعة لتتبع المصاريف، الحسابات، الصدقات، وأرصدة الغير مع تحليلات ورسوم بيانية.">
   <meta name="theme-color" content="#0a0d14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -59,6 +59,11 @@
         <button class="nav-item" data-tab="transactions">
           <i data-lucide="receipt"></i>
           <span>سجل المعاملات</span>
+        </button>
+        <button class="nav-item" data-tab="debts">
+          <i data-lucide="users"></i>
+          <span>أرصدة الغير</span>
+          <span class="nav-badge-pill" id="debtsNavBadge" style="background:var(--primary-light); color:var(--primary);">الديون</span>
         </button>
         <button class="nav-item" data-tab="sadaqah">
           <i data-lucide="heart-handshake"></i>
@@ -181,16 +186,17 @@
               </div>
             </div>
 
-            <div class="stat-card sadaqah-card">
+            <!-- Quick Debts Summary on Dashboard -->
+            <div class="stat-card debts-card" onclick="switchTab('debts')" style="cursor:pointer;" title="اضغط لفتح تفاصيل أرصدة الغير">
               <div class="stat-header">
-                <span class="stat-label">صدقات الشهر</span>
-                <div class="stat-icon-wrapper sadaqah">
-                  <i data-lucide="heart"></i>
+                <span class="stat-label">مستحقات مع الغير (صافي)</span>
+                <div class="stat-icon-wrapper daily">
+                  <i data-lucide="users"></i>
                 </div>
               </div>
-              <div class="stat-value" id="dashSadaqahVal">0.00</div>
+              <div class="stat-value" id="dashDebtsNetVal">0.00</div>
               <div class="stat-footer">
-                <span class="stat-subtext" id="dashSadaqahRatio">نسبة 0% من الدخل</span>
+                <span class="stat-subtext" id="dashDebtsSubtext">ليا برة: 0 | عليا: 0</span>
               </div>
             </div>
           </div>
@@ -362,7 +368,124 @@
           </div>
         </section>
 
-        <!-- TAB 4: SADAQAH & CHARITY (تاب الصدقات والزكاة) -->
+        <!-- TAB 4: DEBTS & THIRD-PARTY BALANCES (أرصدة الغير والديون) -->
+        <section id="tab-debts" class="tab-pane">
+          <div class="section-hero card" style="background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(99, 102, 241, 0.08) 100%);">
+            <div class="hero-content">
+              <div>
+                <h2>أرصدة الغير والمستحقات المالية</h2>
+                <p>سجل دقيق للتعاملات المالية مع الأشخاص: اعرف كل شخص خد منك كام وأعطاك كام، وما هو الرصيد الصافي (هل لك عنده فلوس أم عليك له).</p>
+              </div>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button class="btn btn-outline" onclick="openDebtTxModal()">
+                  <i data-lucide="arrow-left-right"></i>
+                  <span>تسجيل حركة مالية</span>
+                </button>
+                <button class="btn btn-primary" onclick="openPersonModal()">
+                  <i data-lucide="user-plus"></i>
+                  <span>إضافة شخص جديد</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Debts KPI Overview Cards -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">فلوس ليا برة (مستحقات لي)</span>
+                <div class="stat-icon-wrapper income">
+                  <i data-lucide="arrow-down-left"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="debtsOwedToMeVal" style="color:var(--income);">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="debtsOwedToMeCount">0 أشخاص مدينين لي</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">فلوس عليا للغير (ديون عليّ)</span>
+                <div class="stat-icon-wrapper expense">
+                  <i data-lucide="arrow-up-right"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="debtsOwedByMeVal" style="color:var(--expense);">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="debtsOwedByMeCount">0 أشخاص دائنين لي</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">صافي المركز المالي مع الغير</span>
+                <div class="stat-icon-wrapper balance">
+                  <i data-lucide="scale"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="debtsNetPositionVal">0.00</div>
+              <div class="stat-footer">
+                <span class="stat-subtext" id="debtsNetPositionStatus">متزن</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">إجمالي الأشخاص المسجلين</span>
+                <div class="stat-icon-wrapper daily">
+                  <i data-lucide="users"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="debtsPeopleCountVal">0</div>
+              <div class="stat-footer">
+                <span class="stat-subtext">أصدقاء، زملاء، معارف</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Debts Filter & Controls -->
+          <div class="card mt-3">
+            <div class="card-header flex-wrap">
+              <div class="card-title">
+                <i data-lucide="users"></i>
+                <h3>قائمة الأشخاص والأرصدة</h3>
+              </div>
+              <div class="tx-controls">
+                <div class="search-input-box">
+                  <i data-lucide="search"></i>
+                  <input type="text" id="debtsSearchInput" placeholder="بحث باسم الشخص...">
+                </div>
+                <select id="debtsFilterSelect">
+                  <option value="all">جميع الأشخاص</option>
+                  <option value="owed_to_me">أشخاص ليا عندهم فلوس (أخضر)</option>
+                  <option value="owed_by_me">أشخاص عليا ليهم فلوس (أحمر)</option>
+                  <option value="settled">حسابات متصفية ومسواة (صفر)</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="openPersonModal()">
+                  <i data-lucide="plus"></i> إضافة شخص
+                </button>
+              </div>
+            </div>
+
+            <!-- People Cards Grid -->
+            <div class="debts-people-grid" id="debtsPeopleGrid">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Empty State for Debts -->
+            <div id="noDebtsState" class="empty-state hidden">
+              <div class="empty-icon"><i data-lucide="users"></i></div>
+              <h4>لا يوجد أشخاص مسجلون حتى الآن</h4>
+              <p>أضف الأشخاص الذين تتعامل معهم مالياً وسجل ما لك وما عليك لتفادي أي نسيان.</p>
+              <button class="btn btn-primary" onclick="openPersonModal()">
+                <i data-lucide="user-plus"></i> إضافة أول شخص
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: SADAQAH & CHARITY (تاب الصدقات والزكاة) -->
         <section id="tab-sadaqah" class="tab-pane">
           <div class="sadaqah-hero-card">
             <div class="sadaqah-hero-content">
@@ -496,7 +619,7 @@
           </div>
         </section>
 
-        <!-- TAB 5: DETAILED ANALYTICS -->
+        <!-- TAB 6: DETAILED ANALYTICS -->
         <section id="tab-analytics" class="tab-pane">
           <div class="analytics-header-banner">
             <div>
@@ -544,7 +667,7 @@
           </div>
         </section>
 
-        <!-- TAB 6: BUDGETS -->
+        <!-- TAB 7: BUDGETS -->
         <section id="tab-budgets" class="tab-pane">
           <div class="budgets-header card">
             <div class="budgets-header-content">
@@ -608,7 +731,7 @@
           </div>
         </section>
 
-        <!-- TAB 7: SETTINGS & CATEGORIES (صفحة الإعدادات والحسابات والفئات) -->
+        <!-- TAB 8: SETTINGS & CATEGORIES (صفحة الإعدادات والحسابات والفئات) -->
         <section id="tab-settings" class="tab-pane">
           
           <div class="settings-grid">
@@ -760,9 +883,9 @@
       <button class="bottom-nav-fab" id="mobileFabBtn" aria-label="إضافة معاملة">
         <i data-lucide="plus"></i>
       </button>
-      <button class="bottom-nav-item" data-tab="sadaqah">
-        <i data-lucide="heart-handshake"></i>
-        <span>الصدقات</span>
+      <button class="bottom-nav-item" data-tab="debts">
+        <i data-lucide="users"></i>
+        <span>أرصدة الغير</span>
       </button>
       <button class="bottom-nav-item" data-tab="transactions">
         <i data-lucide="receipt"></i>
@@ -784,7 +907,6 @@
       <form id="txForm">
         <input type="hidden" id="txId">
 
-        <!-- Type Selector (3 options: expense, income, sadaqah) -->
         <div class="type-selector-group triple-selector">
           <label class="type-pill">
             <input type="radio" name="txType" value="expense" checked>
@@ -820,16 +942,12 @@
 
           <div class="form-group">
             <label for="txAccount">الحساب المتأثر *</label>
-            <select id="txAccount" required>
-              <!-- Populated dynamically via JS from user accounts -->
-            </select>
+            <select id="txAccount" required></select>
           </div>
 
           <div class="form-group">
             <label for="txCategory">الفئة *</label>
-            <select id="txCategory" required>
-              <!-- Populated dynamically via JS -->
-            </select>
+            <select id="txCategory" required></select>
           </div>
 
           <div class="form-group">
@@ -945,6 +1063,198 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: ADD / EDIT PERSON MODAL (شخص في أرصدة الغير) -->
+  <div class="modal-backdrop" id="personModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="personModalTitle">إضافة شخص جديد</h3>
+        <button class="btn-icon" id="closePersonModalBtn" aria-label="إغلاق">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="personForm">
+        <input type="hidden" id="personEditId">
+
+        <div class="form-group mb-3">
+          <label for="personName">اسم الشخص *</label>
+          <input type="text" id="personName" required placeholder="مثال: محمد علي، مروان، أخي أحمد...">
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="personPhone">رقم الهاتف أو صلة القرابة (اختياري)</label>
+          <input type="text" id="personPhone" placeholder="مثال: 01012345678 أو صديق العمل...">
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="personNotes">ملاحظات عامة</label>
+          <input type="text" id="personNotes" placeholder="مثال: حساب السفرية، سلف قديمة...">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="cancelPersonModalBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i>
+            <span>حفظ الشخص</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 5: ADD DEBT TRANSACTION MODAL (تسجيل حركة سلف أو سداد) -->
+  <div class="modal-backdrop" id="debtTxModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="debtTxModalTitle">تسجيل حركة مالية مع شخص</h3>
+        <button class="btn-icon" id="closeDebtTxModalBtn" aria-label="إغلاق">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="debtTxForm">
+        <div class="form-group mb-3">
+          <label for="debtTxContactId">اختر الشخص *</label>
+          <select id="debtTxContactId" required>
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <!-- Movement Type Selection -->
+        <div class="form-group mb-3">
+          <label>نوع المعاملة *</label>
+          <div class="debt-type-grid">
+            <label class="debt-type-pill">
+              <input type="radio" name="debtDirection" value="lent" checked>
+              <span class="debt-type-box gave-box">
+                <i data-lucide="arrow-up-right"></i>
+                <strong>خد مني</strong>
+                <small>(أنا دفعته له / سلّفته)</small>
+              </span>
+            </label>
+
+            <label class="debt-type-pill">
+              <input type="radio" name="debtDirection" value="collected">
+              <span class="debt-type-box took-box">
+                <i data-lucide="arrow-down-left"></i>
+                <strong>أعطاني سداداً</strong>
+                <small>(سدد لي من اللي عليه)</small>
+              </span>
+            </label>
+
+            <label class="debt-type-pill">
+              <input type="radio" name="debtDirection" value="borrowed">
+              <span class="debt-type-box borrowed-box">
+                <i data-lucide="arrow-down-left"></i>
+                <strong>أعطاني سلفة</strong>
+                <small>(أنا استلفت منه / دفع عني)</small>
+              </span>
+            </label>
+
+            <label class="debt-type-pill">
+              <input type="radio" name="debtDirection" value="repaid">
+              <span class="debt-type-box repaid-box">
+                <i data-lucide="arrow-up-right"></i>
+                <strong>أنا سددت له</strong>
+                <small>(رجعت له من اللي عليا)</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="debtTxAmount">المبلغ *</label>
+            <div class="input-with-icon">
+              <input type="number" id="debtTxAmount" step="0.01" min="0.01" required placeholder="0.00" inputmode="decimal">
+              <span class="currency-symbol-addon" id="debtCurrencySymbol">EGP</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="debtTxDate">التاريخ *</label>
+            <input type="date" id="debtTxDate" required>
+          </div>
+        </div>
+
+        <!-- Optional Link with My Accounts -->
+        <div class="form-group mb-3">
+          <label for="debtLinkedAccount">هل خرج/دخل المبلغ من أحد حساباتك؟ (اختياري)</label>
+          <select id="debtLinkedAccount">
+            <option value="none">لا (معاملة خارجية بدون تأثير على رصيد حساباتي)</option>
+            <!-- Populated with accounts via JS -->
+          </select>
+          <small class="text-muted text-xs">إذا اخترت حساباً (مثلاً: بوكيت موني أو فودافون كاش) فسيتم خصم/إضافة المبلغ إليه تلقائياً.</small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="debtTxNote">السبب أو الملاحظات</label>
+          <input type="text" id="debtTxNote" placeholder="مثال: غداء عمل، سلفة طارئة، قسط جمعية...">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="cancelDebtTxModalBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i>
+            <span>تسجيل الحركة</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 6: PERSON DETAILED LEDGER MODAL (سجل حساب الشخص بالكامل) -->
+  <div class="modal-backdrop" id="personLedgerModalBackdrop">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="ledgerPersonName">سجل حساب: -</h3>
+          <p id="ledgerPersonSub" class="text-muted text-sm"></p>
+        </div>
+        <button class="btn-icon" id="closePersonLedgerModalBtn" aria-label="إغلاق">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Person Balance Card inside Modal -->
+      <div class="person-ledger-hero-box" id="personLedgerHeroBox">
+        <!-- Rendered dynamically via JS -->
+      </div>
+
+      <div class="ledger-actions-bar mt-3">
+        <h4>سجل الحركات التفصيلي (Log)</h4>
+        <button class="btn btn-primary btn-sm" id="ledgerAddMovementBtn">
+          <i data-lucide="plus"></i> تسجيل حركة للشخص
+        </button>
+      </div>
+
+      <div class="table-responsive mt-2">
+        <table class="custom-table" style="font-size:0.85rem;">
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>الحركة</th>
+              <th>المبلغ</th>
+              <th>الحساب المتأثر</th>
+              <th>البيان</th>
+              <th class="actions-col">إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="personLedgerTableBody">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between; margin-top:1.5rem;">
+        <button type="button" class="btn btn-danger btn-sm" id="ledgerSettleBtn">
+          <i data-lucide="check-check"></i> تسوية الحساب (تصفير الرصيد)
+        </button>
+        <button type="button" class="btn btn-ghost" id="closePersonLedgerBottomBtn">إغلاق</button>
+      </div>
     </div>
   </div>
 
